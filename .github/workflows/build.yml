@@ -26,15 +26,17 @@ jobs:
 
       - name: Install web dependencies (no Electron)
         run: |
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json'));
-            const removeDeps = ['electron','electron-builder','concurrently','wait-on'];
-            const removeDevDeps = ['electron-is-dev','electron-squirrel-startup','electron-updater'];
-            removeDeps.forEach(d => delete pkg.devDependencies[d]);
-            removeDevDeps.forEach(d => delete pkg.dependencies[d]);
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-          "
+          cat > strip-electron.js << 'EOF'
+          const fs = require('fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json'));
+          const removeDev = ['electron','electron-builder','concurrently','wait-on'];
+          const removeDep = ['electron-is-dev','electron-squirrel-startup','electron-updater'];
+          removeDev.forEach(d => delete (pkg.devDependencies || {})[d]);
+          removeDep.forEach(d => delete (pkg.dependencies || {})[d]);
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          console.log('Electron deps removed.');
+          EOF
+          node strip-electron.js
           npm install --ignore-scripts --no-audit --no-fund
 
       - name: Build web app
