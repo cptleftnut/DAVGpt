@@ -1,0 +1,65 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Install web dependencies (no Electron)
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json'));
+            const removeDeps = ['electron','electron-builder','concurrently','wait-on'];
+            const removeDevDeps = ['electron-is-dev','electron-squirrel-startup','electron-updater'];
+            removeDeps.forEach(d => delete pkg.devDependencies[d]);
+            removeDevDeps.forEach(d => delete pkg.dependencies[d]);
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+          npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Build web app
+        run: npx vite build
+
+      - name: Install Capacitor
+        run: |
+          npm install @capacitor/core @capacitor/cli @capacitor/android \
+            --ignore-scripts --no-audit --no-fund
+
+      - name: Init and sync Capacitor
+        run: |
+          npx cap init "DAVGpt" "com.davgpt.app" --web-dir dist
+          npx cap add android
+          npx cap sync android
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DAVGpt-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
