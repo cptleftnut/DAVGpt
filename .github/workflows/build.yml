@@ -24,11 +24,13 @@ jobs:
           java-version: 17
           distribution: temurin
 
-      - name: Install web dependencies
+      - name: Install dependencies
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: 1
           ELECTRON_BUILDER_SKIP_DOWNLOAD: 1
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install vite @vitejs/plugin-react-swc vite-plugin-top-level-await vite-plugin-wasm --no-audit --no-fund
 
       - name: Build web app
         run: ./node_modules/.bin/vite build
