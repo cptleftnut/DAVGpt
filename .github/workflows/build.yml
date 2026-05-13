@@ -24,28 +24,17 @@ jobs:
           java-version: 17
           distribution: temurin
 
-      - name: Install web dependencies (no Electron)
-        run: |
-          cat > strip-electron.js << 'EOF'
-          const fs = require('fs');
-          const pkg = JSON.parse(fs.readFileSync('package.json'));
-          const removeDev = ['electron','electron-builder','concurrently','wait-on'];
-          const removeDep = ['electron-is-dev','electron-squirrel-startup','electron-updater'];
-          removeDev.forEach(d => delete (pkg.devDependencies || {})[d]);
-          removeDep.forEach(d => delete (pkg.dependencies || {})[d]);
-          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-          console.log('Electron deps removed.');
-          EOF
-          node strip-electron.js
-          npm install --ignore-scripts --no-audit --no-fund
+      - name: Install web dependencies
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+          ELECTRON_BUILDER_SKIP_DOWNLOAD: 1
+        run: npm install --ignore-scripts --no-audit --no-fund
 
       - name: Build web app
         run: npx vite build
 
       - name: Install Capacitor
-        run: |
-          npm install @capacitor/core @capacitor/cli @capacitor/android \
-            --ignore-scripts --no-audit --no-fund
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android --ignore-scripts --no-audit --no-fund
 
       - name: Init and sync Capacitor
         run: |
