@@ -13,38 +13,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: temurin
-
-      - name: Install dependencies
-        env:
-          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
-          ELECTRON_BUILDER_SKIP_DOWNLOAD: 1
-        run: |
-          npm install --ignore-scripts --no-audit --no-fund
-          npm install vite @vitejs/plugin-react-swc vite-plugin-top-level-await vite-plugin-wasm --no-audit --no-fund
-
-      - name: Build web app
-        run: ./node_modules/.bin/vite build
-
-      - name: Install Capacitor v4
-        run: |
-          npm install @capacitor/core@4 @capacitor/cli@4 @capacitor/android@4 \
-            --ignore-scripts --no-audit --no-fund
-
-      - name: Init and sync Capacitor
-        run: |
-          npx cap init "DAVGpt" "com.davgpt.app" --web-dir dist
-          npx cap add android
-          npx cap sync android
 
       - name: Build debug APK
         run: |
