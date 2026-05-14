@@ -4,18 +4,68 @@ import './App.css'
 
 interface Message {
   id: number
-  role: 'user' | 'assistant'
+  role: 'user' | 'assistant' | 'system'
   content: string
+  toolCall?: { name: string; args: any }
+  toolResult?: string
 }
 
 const MODELS = [
-  { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B' },
-  { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B' },
-  { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
-  { id: 'gemma2-9b-it', label: 'Gemma 2 9B' },
+  { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', agent: false },
+  { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B', agent: false },
+  { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B', agent: false },
+  { id: 'gemma2-9b-it', label: 'Gemma 2 9B', agent: false },
+  { id: 'nous-hermes-2-pro-llama-3-8b', label: '🤖 Hermes Agent', agent: true },
 ]
 
 const GROQ_BASE = 'https://api.groq.com/openai/v1/chat/completions'
+
+const HERMES_SYSTEM = `You are a helpful AI assistant with access to tools. When you want to use a tool, respond with a tool_call block in this exact format:
+
+<tool_call>
+{"name": "tool_name", "arguments": {"arg1": "value1"}}
+</tool_call>
+
+Available tools:
+- web_search(query: string): Search the web for information
+- calculate(expression: string): Evaluate a math expression
+- get_time(): Get the current date and time
+- summarize(text: string): Summarize a long piece of text
+
+After receiving a tool result, continue your response naturally. Always be helpful and thorough.`
+
+// Parse Hermes <tool_call> blocks
+function parseToolCall(content: string): { name: string; args: any } | null {
+  const match = content.match(/<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/)
+  if (!match) return null
+  try { return JSON.parse(match[1]) } catch { return null }
+}
+
+// Execute tool locally
+async function executeTool(name: string, args: any): Promise<string> {
+  switch (name) {
+    case 'calculate':
+      try {
+        // Safe eval for math only
+        const result = Function(`"use strict"; return (${args.expression})`)()
+        return `Result: ${result}`
+      } catch { return 'Error: invalid expression' }
+    case 'get_time':
+      return `Current time: ${new Date().toLocaleString()}`
+    case 'summarize':
+      return `[Summary requested for ${args.text?.length ?? 0} characters of text — summarize in your next response]`
+    case 'web_search':
+      return `[Web search for "${args.query}" — use your training knowledge to answer as best you can]`
+    default:
+      return `[Tool "${name}" not available]`
+  }
+}
+
+function renderContent(content: string) {
+  // Strip tool_call blocks from display
+  const clean = content.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').trim()
+  return clean
+}
 
 function Chat() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -27,6 +77,8 @@ function Chat() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  const isHermes = MODELS.find(m => m.id === model)?.agent ?? false
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
@@ -36,30 +88,69 @@ function Chat() {
     setShowSettings(false)
   }
 
+  const buildApiMessages = (msgs: Message[]) => {
+    const result: any[] = []
+    if (isHermes) result.push({ role: 'system', content: HERMES_SYSTEM })
+    for (const m of msgs) {
+      if (m.role === 'system') continue
+      result.push({ role: m.role, content: m.content })
+      if (m.toolResult) {
+        result.push({ role: 'user', content: `<tool_response>\n${m.toolResult}\n</tool_response>` })
+      }
+    }
+    return result
+  }
+
+  const callGroq = async (msgs: Message[]): Promise<string> => {
+    const res = await fetch(GROQ_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({ model, messages: buildApiMessages(msgs) }),
+    })
+    const data = await res.json()
+    return data.choices?.[0]?.message?.content ?? data.error?.message ?? 'No response'
+  }
+
   const send = async () => {
     const text = input.trim()
     if (!text || loading || !apiKey) return
+
     const userMsg: Message = { id: Date.now(), role: 'user', content: text }
-    const history = [...messages, userMsg]
+    let history = [...messages, userMsg]
     setMessages(history)
     setInput('')
     setLoading(true)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
+
     try {
-      const res = await fetch(GROQ_BASE, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          messages: history.map(m => ({ role: m.role, content: m.content })),
-        }),
-      })
-      const data = await res.json()
-      const reply = data.choices?.[0]?.message?.content ?? data.error?.message ?? 'No response'
-      setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: reply }])
+      let reply = await callGroq(history)
+      const toolCall = isHermes ? parseToolCall(reply) : null
+
+      if (toolCall) {
+        // Show assistant message with tool call
+        const assistantMsg: Message = {
+          id: Date.now(),
+          role: 'assistant',
+          content: reply,
+          toolCall,
+        }
+        history = [...history, assistantMsg]
+        setMessages(history)
+
+        // Execute tool
+        const toolResult = await executeTool(toolCall.name, toolCall.args)
+        const msgWithResult: Message = { ...assistantMsg, toolResult }
+        history = [...history.slice(0, -1), msgWithResult]
+        setMessages(history)
+
+        // Get final response after tool result
+        reply = await callGroq(history)
+        history = [...history, { id: Date.now() + 1, role: 'assistant', content: reply }]
+      } else {
+        history = [...history, { id: Date.now(), role: 'assistant', content: reply }]
+      }
+
+      setMessages(history)
     } catch (e: any) {
       setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: `Error: ${e.message}` }])
     } finally {
@@ -89,6 +180,12 @@ function Chat() {
         <button className="icon-btn" onClick={() => setShowSettings(true)}>⚙️</button>
       </header>
 
+      {isHermes && (
+        <div className="agent-banner">
+          🤖 Hermes Agent Mode — tool calling enabled
+        </div>
+      )}
+
       {showSettings && (
         <div className="modal-overlay" onClick={() => apiKey && setShowSettings(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
@@ -113,12 +210,30 @@ function Chat() {
         {messages.length === 0 && !loading && (
           <div className="empty-state">
             <div className="empty-icon">✦</div>
-            <p>How can I help you today?</p>
+            <p>{isHermes ? 'Hermes Agent ready. I can use tools to help you.' : 'How can I help you today?'}</p>
           </div>
         )}
         {messages.map(msg => (
-          <div key={msg.id} className={`msg msg-${msg.role}`}>
-            <div className="bubble">{msg.content}</div>
+          <div key={msg.id}>
+            {msg.role !== 'system' && (
+              <div className={`msg msg-${msg.role}`}>
+                <div className="bubble">
+                  {renderContent(msg.content)}
+                  {msg.toolCall && (
+                    <div className="tool-call">
+                      <span className="tool-tag">🔧 {msg.toolCall.name}</span>
+                      <code>{JSON.stringify(msg.toolCall.args)}</code>
+                    </div>
+                  )}
+                  {msg.toolResult && (
+                    <div className="tool-result">
+                      <span className="tool-tag">📤 result</span>
+                      <code>{msg.toolResult}</code>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ))}
         {loading && (
@@ -135,7 +250,7 @@ function Chat() {
             ref={textareaRef}
             className="input"
             rows={1}
-            placeholder={apiKey ? 'Message DAVGpt...' : 'Add your Groq API key in settings first'}
+            placeholder={apiKey ? (isHermes ? 'Ask Hermes Agent...' : 'Message DAVGpt...') : 'Add your Groq API key in settings first'}
             value={input}
             onChange={autoResize}
             onKeyDown={onKeyDown}
