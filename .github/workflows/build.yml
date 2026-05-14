@@ -25,7 +25,7 @@ jobs:
           distribution: temurin
 
       - name: Install Capacitor Android (needed by Gradle)
-        run: npm install @capacitor/android@4 --ignore-scripts --no-audit --no-fund
+        run: npm install @capacitor/android@latest --ignore-scripts --no-audit --no-fund
 
       - name: Build debug APK
         run: |
