@@ -9,21 +9,21 @@ interface Message {
 }
 
 const MODELS = [
-  { id: 'gpt-4o', label: 'GPT-4o' },
-  { id: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-  { id: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
-  { id: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
+  { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B' },
+  { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B' },
+  { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
+  { id: 'gemma2-9b-it', label: 'Gemma 2 9B' },
 ]
 
-const OPENAI_BASE = 'https://api.openai.com/v1/chat/completions'
+const GROQ_BASE = 'https://api.groq.com/openai/v1/chat/completions'
 
 function Chat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('davgpt_openai_key') || '')
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('davgpt_groq_key') || '')
   const [model, setModel] = useState(MODELS[0].id)
   const [loading, setLoading] = useState(false)
-  const [showSettings, setShowSettings] = useState(!localStorage.getItem('davgpt_openai_key'))
+  const [showSettings, setShowSettings] = useState(!localStorage.getItem('davgpt_groq_key'))
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -32,7 +32,7 @@ function Chat() {
   }, [messages, loading])
 
   const saveKey = () => {
-    localStorage.setItem('davgpt_openai_key', apiKey)
+    localStorage.setItem('davgpt_groq_key', apiKey)
     setShowSettings(false)
   }
 
@@ -46,7 +46,7 @@ function Chat() {
     setLoading(true)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     try {
-      const res = await fetch(OPENAI_BASE, {
+      const res = await fetch(GROQ_BASE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,17 +93,17 @@ function Chat() {
         <div className="modal-overlay" onClick={() => apiKey && setShowSettings(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h2>Settings</h2>
-            <label>OpenAI API Key</label>
+            <label>Groq API Key</label>
             <input
               type="password"
               className="key-input"
-              placeholder="sk-proj-..."
+              placeholder="gsk_..."
               value={apiKey}
               onChange={e => setApiKey(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && saveKey()}
               autoFocus
             />
-            <p className="hint">Get your key at platform.openai.com — stored locally only.</p>
+            <p className="hint">Get your free key at console.groq.com — stored locally only.</p>
             <button className="btn-primary" onClick={saveKey} disabled={!apiKey}>Save & Continue</button>
           </div>
         </div>
@@ -135,7 +135,7 @@ function Chat() {
             ref={textareaRef}
             className="input"
             rows={1}
-            placeholder={apiKey ? 'Message DAVGpt...' : 'Add your OpenAI API key in settings first'}
+            placeholder={apiKey ? 'Message DAVGpt...' : 'Add your Groq API key in settings first'}
             value={input}
             onChange={autoResize}
             onKeyDown={onKeyDown}
@@ -150,24 +150,17 @@ function Chat() {
 
 export default function App() {
   const [tab, setTab] = useState<'chat' | 'terminal'>('chat')
-
   return (
     <div className="app">
       <div className="tab-content">
         {tab === 'chat' ? <Chat /> : <Terminal />}
       </div>
       <nav className="tab-bar">
-        <button
-          className={`tab-btn ${tab === 'chat' ? 'active' : ''}`}
-          onClick={() => setTab('chat')}
-        >
+        <button className={`tab-btn ${tab === 'chat' ? 'active' : ''}`} onClick={() => setTab('chat')}>
           <span className="tab-icon">💬</span>
           <span className="tab-label">Chat</span>
         </button>
-        <button
-          className={`tab-btn ${tab === 'terminal' ? 'active' : ''}`}
-          onClick={() => setTab('terminal')}
-        >
+        <button className={`tab-btn ${tab === 'terminal' ? 'active' : ''}`} onClick={() => setTab('terminal')}>
           <span className="tab-icon">⌨️</span>
           <span className="tab-label">Terminal</span>
         </button>
