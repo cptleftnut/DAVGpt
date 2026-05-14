@@ -3,25 +3,26 @@ import './App.css'
 
 interface Message {
   id: number
-  role: 'user' | 'model'
+  role: 'user' | 'assistant'
   content: string
 }
 
 const MODELS = [
-  { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-  { id: 'gemini-2.5-flash-lite-preview-06-17', label: 'Gemini 2.5 Flash Lite' },
-  { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+  { id: 'gpt-4o', label: 'GPT-4o' },
+  { id: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+  { id: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+  { id: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
 ]
 
-const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
+const OPENAI_BASE = 'https://api.openai.com/v1/chat/completions'
 
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('davgpt_gemini_key') || '')
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('davgpt_openai_key') || '')
   const [model, setModel] = useState(MODELS[0].id)
   const [loading, setLoading] = useState(false)
-  const [showSettings, setShowSettings] = useState(!localStorage.getItem('davgpt_gemini_key'))
+  const [showSettings, setShowSettings] = useState(!localStorage.getItem('davgpt_openai_key'))
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -30,7 +31,7 @@ export default function App() {
   }, [messages, loading])
 
   const saveKey = () => {
-    localStorage.setItem('davgpt_gemini_key', apiKey)
+    localStorage.setItem('davgpt_openai_key', apiKey)
     setShowSettings(false)
   }
 
@@ -49,29 +50,27 @@ export default function App() {
     }
 
     try {
-      const res = await fetch(
-        `${GEMINI_BASE}/${model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: history.map(m => ({
-              role: m.role,
-              parts: [{ text: m.content }],
-            })),
-          }),
-        }
-      )
+      const res = await fetch(OPENAI_BASE, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: history.map(m => ({ role: m.role, content: m.content })),
+        }),
+      })
 
       const data = await res.json()
       const reply =
-        data.candidates?.[0]?.content?.parts?.[0]?.text ??
+        data.choices?.[0]?.message?.content ??
         data.error?.message ??
         'No response'
 
-      setMessages(prev => [...prev, { id: Date.now(), role: 'model', content: reply }])
+      setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: reply }])
     } catch (e: any) {
-      setMessages(prev => [...prev, { id: Date.now(), role: 'model', content: `Error: ${e.message}` }])
+      setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: `Error: ${e.message}` }])
     } finally {
       setLoading(false)
     }
@@ -108,17 +107,17 @@ export default function App() {
         <div className="modal-overlay" onClick={() => apiKey && setShowSettings(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h2>Settings</h2>
-            <label>Google Gemini API Key</label>
+            <label>OpenAI API Key</label>
             <input
               type="password"
               className="key-input"
-              placeholder="AIza..."
+              placeholder="sk-proj-..."
               value={apiKey}
               onChange={e => setApiKey(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && saveKey()}
               autoFocus
             />
-            <p className="hint">Get your key at aistudio.google.com — stored locally only.</p>
+            <p className="hint">Get your key at platform.openai.com — stored locally only.</p>
             <button className="btn-primary" onClick={saveKey} disabled={!apiKey}>Save & Continue</button>
           </div>
         </div>
@@ -137,7 +136,7 @@ export default function App() {
           </div>
         ))}
         {loading && (
-          <div className="msg msg-model">
+          <div className="msg msg-assistant">
             <div className="bubble typing"><span /><span /><span /></div>
           </div>
         )}
@@ -150,7 +149,7 @@ export default function App() {
             ref={textareaRef}
             className="input"
             rows={1}
-            placeholder={apiKey ? 'Message DAVGpt...' : 'Add your Gemini API key in settings first'}
+            placeholder={apiKey ? 'Message DAVGpt...' : 'Add your OpenAI API key in settings first'}
             value={input}
             onChange={autoResize}
             onKeyDown={onKeyDown}
