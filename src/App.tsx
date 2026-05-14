@@ -3,23 +3,25 @@ import './App.css'
 
 interface Message {
   id: number
-  role: 'user' | 'assistant'
+  role: 'user' | 'model'
   content: string
 }
 
 const MODELS = [
-  { id: 'claude-opus-4-5', label: 'Claude Opus' },
-  { id: 'claude-sonnet-4-5', label: 'Claude Sonnet' },
-  { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku' },
+  { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+  { id: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
 ]
+
+const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('davgpt_key') || '')
-  const [model, setModel] = useState(MODELS[1].id)
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('davgpt_gemini_key') || '')
+  const [model, setModel] = useState(MODELS[0].id)
   const [loading, setLoading] = useState(false)
-  const [showSettings, setShowSettings] = useState(!localStorage.getItem('davgpt_key'))
+  const [showSettings, setShowSettings] = useState(!localStorage.getItem('davgpt_gemini_key'))
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -28,7 +30,7 @@ export default function App() {
   }, [messages, loading])
 
   const saveKey = () => {
-    localStorage.setItem('davgpt_key', apiKey)
+    localStorage.setItem('davgpt_gemini_key', apiKey)
     setShowSettings(false)
   }
 
@@ -47,26 +49,29 @@ export default function App() {
     }
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 2048,
-          messages: history.map(m => ({ role: m.role, content: m.content })),
-        }),
-      })
+      const res = await fetch(
+        `${GEMINI_BASE}/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: history.map(m => ({
+              role: m.role,
+              parts: [{ text: m.content }],
+            })),
+          }),
+        }
+      )
 
       const data = await res.json()
-      const reply = data.content?.[0]?.text ?? data.error?.message ?? 'No response'
-      setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: reply }])
+      const reply =
+        data.candidates?.[0]?.content?.parts?.[0]?.text ??
+        data.error?.message ??
+        'No response'
+
+      setMessages(prev => [...prev, { id: Date.now(), role: 'model', content: reply }])
     } catch (e: any) {
-      setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: `Error: ${e.message}` }])
+      setMessages(prev => [...prev, { id: Date.now(), role: 'model', content: `Error: ${e.message}` }])
     } finally {
       setLoading(false)
     }
@@ -87,49 +92,38 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* Header */}
       <header className="header">
         <div className="header-left">
           <span className="logo">DAVGpt</span>
-          <select
-            className="model-select"
-            value={model}
-            onChange={e => setModel(e.target.value)}
-          >
+          <select className="model-select" value={model} onChange={e => setModel(e.target.value)}>
             {MODELS.map(m => (
               <option key={m.id} value={m.id}>{m.label}</option>
             ))}
           </select>
         </div>
-        <button className="icon-btn" onClick={() => setShowSettings(true)} title="Settings">
-          ⚙️
-        </button>
+        <button className="icon-btn" onClick={() => setShowSettings(true)} title="Settings">⚙️</button>
       </header>
 
-      {/* Settings Modal */}
       {showSettings && (
         <div className="modal-overlay" onClick={() => apiKey && setShowSettings(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h2>Settings</h2>
-            <label>Anthropic API Key</label>
+            <label>Google Gemini API Key</label>
             <input
               type="password"
               className="key-input"
-              placeholder="sk-ant-..."
+              placeholder="AIza..."
               value={apiKey}
               onChange={e => setApiKey(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && saveKey()}
               autoFocus
             />
-            <p className="hint">Your key is stored locally on this device only.</p>
-            <button className="btn-primary" onClick={saveKey} disabled={!apiKey}>
-              Save & Continue
-            </button>
+            <p className="hint">Get your key at aistudio.google.com — stored locally only.</p>
+            <button className="btn-primary" onClick={saveKey} disabled={!apiKey}>Save & Continue</button>
           </div>
         </div>
       )}
 
-      {/* Messages */}
       <main className="messages">
         {messages.length === 0 && !loading && (
           <div className="empty-state">
@@ -143,35 +137,26 @@ export default function App() {
           </div>
         ))}
         {loading && (
-          <div className="msg msg-assistant">
-            <div className="bubble typing">
-              <span /><span /><span />
-            </div>
+          <div className="msg msg-model">
+            <div className="bubble typing"><span /><span /><span /></div>
           </div>
         )}
         <div ref={bottomRef} />
       </main>
 
-      {/* Input */}
       <footer className="input-bar">
         <div className="input-wrap">
           <textarea
             ref={textareaRef}
             className="input"
             rows={1}
-            placeholder={apiKey ? 'Message DAVGpt...' : 'Add your API key in settings first'}
+            placeholder={apiKey ? 'Message DAVGpt...' : 'Add your Gemini API key in settings first'}
             value={input}
             onChange={autoResize}
             onKeyDown={onKeyDown}
             disabled={!apiKey || loading}
           />
-          <button
-            className="send-btn"
-            onClick={send}
-            disabled={!input.trim() || loading || !apiKey}
-          >
-            ↑
-          </button>
+          <button className="send-btn" onClick={send} disabled={!input.trim() || loading || !apiKey}>↑</button>
         </div>
       </footer>
     </div>
