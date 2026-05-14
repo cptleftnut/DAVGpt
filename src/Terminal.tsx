@@ -3,6 +3,7 @@ import Termux from './termux'
 import './Terminal.css'
 
 const SETUP_COMMANDS = [
+  { label: '🔓 Allow External Apps', cmd: 'mkdir -p ~/.termux && echo "allow-external-apps=true" >> ~/.termux/termux.properties && echo "✓ Done! Restart Termux now."', desc: 'Required once — enables DAVGpt → Termux bridge' },
   { label: 'Full Setup', cmd: 'curl -sL https://raw.githubusercontent.com/cptleftnut/DAVGpt/main/setup.sh | bash', desc: 'Install zsh, Node, Java & aliases' },
   { label: 'Update Packages', cmd: 'pkg update -y && pkg upgrade -y', desc: 'Update all Termux packages' },
   { label: 'Install Node', cmd: 'pkg install -y nodejs', desc: 'Install Node.js' },
