@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import Terminal from './Terminal'
+import SkillsPanel, { Skill } from './Skills'
 import './App.css'
 
 interface Message {
@@ -74,6 +75,8 @@ function Chat() {
   const [model, setModel] = useState(MODELS[0].id)
   const [loading, setLoading] = useState(false)
   const [showSettings, setShowSettings] = useState(!localStorage.getItem('davgpt_groq_key'))
+  const [showSkills, setShowSkills] = useState(false)
+  const [activeSkill, setActiveSkill] = useState<Skill | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -88,9 +91,19 @@ function Chat() {
     setShowSettings(false)
   }
 
+  const onSkillSelect = (skill: Skill) => {
+    setActiveSkill(skill)
+    if (skill.inputTemplate) setInput(skill.inputTemplate)
+    if (textareaRef.current) {
+      textareaRef.current.focus()
+      textareaRef.current.style.height = 'auto'
+    }
+  }
+
   const buildApiMessages = (msgs: Message[]) => {
     const result: any[] = []
     if (isHermes) result.push({ role: 'system', content: HERMES_SYSTEM })
+    else if (activeSkill) result.push({ role: 'system', content: activeSkill.systemPrompt })
     for (const m of msgs) {
       if (m.role === 'system') continue
       result.push({ role: m.role, content: m.content })
@@ -180,6 +193,17 @@ function Chat() {
         <button className="icon-btn" onClick={() => setShowSettings(true)}>⚙️</button>
       </header>
 
+      {showSkills && (
+        <SkillsPanel onSelect={onSkillSelect} onClose={() => setShowSkills(false)} />
+      )}
+
+      {activeSkill && !isHermes && (
+        <div className="skill-banner">
+          {activeSkill.icon} {activeSkill.label}
+          <button className="skill-clear" onClick={() => { setActiveSkill(null); setInput('') }}>✕</button>
+        </div>
+      )}
+
       {isHermes && (
         <div className="agent-banner">
           🤖 Hermes Agent Mode — tool calling enabled
@@ -250,12 +274,15 @@ function Chat() {
             ref={textareaRef}
             className="input"
             rows={1}
-            placeholder={apiKey ? (isHermes ? 'Ask Hermes Agent...' : 'Message DAVGpt...') : 'Add your Groq API key in settings first'}
+            placeholder={apiKey ? (isHermes ? 'Ask Hermes Agent...' : activeSkill ? activeSkill.placeholder : 'Message DAVGpt...') : 'Add your Groq API key in settings first'}
             value={input}
             onChange={autoResize}
             onKeyDown={onKeyDown}
             disabled={!apiKey || loading}
           />
+          {!isHermes && (
+            <button className="skill-btn" onClick={() => setShowSkills(true)} disabled={!apiKey}>⚡</button>
+          )}
           <button className="send-btn" onClick={send} disabled={!input.trim() || loading || !apiKey}>↑</button>
         </div>
       </footer>
