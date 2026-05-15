@@ -6,6 +6,8 @@ interface Props {
   role: 'user' | 'assistant'
   onRunCommand?: (cmd: string) => boolean
   connState?: string
+  onSpeak?: (text: string) => void
+  speaking?: boolean
 }
 
 // Parse message into text and code blocks
@@ -68,7 +70,7 @@ function CodeBlock({ lang, code, onRun, connState }: {
   )
 }
 
-export default function MessageBubble({ content, role, onRunCommand, connState }: Props) {
+export default function MessageBubble({ content, role, onRunCommand, connState, onSpeak, speaking }: Props) {
   if (role === 'user') {
     return <div className="bubble user-bubble">{content}</div>
   }
@@ -77,6 +79,13 @@ export default function MessageBubble({ content, role, onRunCommand, connState }
 
   return (
     <div className="bubble ai-bubble">
+      <div className="bubble-actions">
+        {onSpeak && (
+          <button className="speak-btn" onClick={() => speaking ? window.speechSynthesis?.cancel() : onSpeak(content)} title={speaking ? "Stop" : "Read aloud"}>
+            {speaking ? '⏹' : '🔊'}
+          </button>
+        )}
+      </div>
       {blocks.map((block, i) =>
         block.type === 'text' ? (
           <span key={i} className="text-block">{block.content}</span>

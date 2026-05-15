@@ -98,3 +98,21 @@
   line-height: 1.6;
   white-space: pre;
 }
+
+.bubble-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -4px;
+}
+
+.speak-btn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.5;
+  padding: 2px 4px;
+  transition: opacity 0.15s;
+}
+
+.speak-btn:hover, .speak-btn:active { opacity: 1; }

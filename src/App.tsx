@@ -3,6 +3,7 @@ import Terminal from './Terminal'
 import SkillsPanel, { Skill } from './Skills'
 import MessageBubble from './MessageBubble'
 import { useTerminalBridge } from './useTerminalBridge'
+import { useTTS, useSTT } from './useSpeech'
 import './App.css'
 
 interface Message {
@@ -70,6 +71,10 @@ function Chat({ bridge, switchToTerminal }: {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const isHermes = MODELS.find(m => m.id === model)?.agent ?? false
+  const tts = useTTS()
+  const stt = useSTT((transcript) => {
+    setInput(prev => prev ? prev + ' ' + transcript : transcript)
+  })
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -137,6 +142,9 @@ function Chat({ bridge, switchToTerminal }: {
         history = [...history, { id: Date.now(), role: 'assistant', content: reply }]
       }
       setMessages(history)
+      // Auto-speak last assistant reply
+      const lastMsg = history[history.length - 1]
+      if (tts.autoSpeak && lastMsg?.role === 'assistant') tts.speak(lastMsg.content)
     } catch (e: any) {
       setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: `Error: ${e.message}` }])
     } finally {
@@ -188,6 +196,12 @@ function Chat({ bridge, switchToTerminal }: {
             <input type="password" className="key-input" placeholder="gsk_..." value={apiKey}
               onChange={e => setApiKey(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveKey()} autoFocus />
             <p className="hint">Get your free key at console.groq.com — stored locally only.</p>
+            <div className="setting-row">
+              <label>Auto-speak responses</label>
+              <button className={`toggle-btn ${tts.autoSpeak ? 'on' : ''}`} onClick={tts.toggleAutoSpeak}>
+                {tts.autoSpeak ? 'ON' : 'OFF'}
+              </button>
+            </div>
             <button className="btn-primary" onClick={saveKey} disabled={!apiKey}>Save & Continue</button>
           </div>
         </div>
@@ -210,6 +224,8 @@ function Chat({ bridge, switchToTerminal }: {
               role={msg.role as 'user' | 'assistant'}
               onRunCommand={msg.role === 'assistant' ? handleRunCommand : undefined}
               connState={bridge.connState}
+              onSpeak={msg.role === 'assistant' ? tts.speak : undefined}
+              speaking={tts.speaking}
             />
             {msg.toolCall && (
               <div className="tool-call">
@@ -231,6 +247,13 @@ function Chat({ bridge, switchToTerminal }: {
         <div className="input-wrap">
           {!isHermes && (
             <button className="skill-btn" onClick={() => setShowSkills(true)} disabled={!apiKey}>⚡</button>
+          )}
+          {stt.supported && (
+            <button
+              className={`mic-btn ${stt.listening ? 'listening' : ''}`}
+              onClick={stt.listening ? stt.stop : stt.start}
+              title={stt.listening ? 'Stop recording' : 'Voice input'}
+            >{stt.listening ? '⏹' : '🎤'}</button>
           )}
           <textarea ref={textareaRef} className="input" rows={1}
             placeholder={apiKey ? (isHermes ? 'Ask Hermes Agent...' : activeSkill ? activeSkill.placeholder : 'Message DAVGpt...') : 'Add your Groq API key in settings first'}
