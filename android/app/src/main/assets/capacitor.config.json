@@ -1,5 +1,8 @@
 {
 	"appId": "com.davgpt.app",
 	"appName": "DAVGpt",
-	"webDir": "dist"
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "http"
+	}
 }
