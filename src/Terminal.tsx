@@ -1,134 +1,193 @@
-import { useState } from 'react'
-import Termux from './termux'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import './Terminal.css'
 
-const SETUP_COMMANDS = [
-  { label: '🔓 Allow External Apps', cmd: 'mkdir -p ~/.termux && echo "allow-external-apps=true" >> ~/.termux/termux.properties && echo "✓ Done! Restart Termux now."', desc: 'Required once — enables DAVGpt → Termux bridge' },
-  { label: 'Full Setup', cmd: 'curl -sL https://raw.githubusercontent.com/cptleftnut/DAVGpt/main/setup.sh | bash', desc: 'Install zsh, Node, Java & aliases' },
-  { label: 'Update Packages', cmd: 'pkg update -y && pkg upgrade -y', desc: 'Update all Termux packages' },
-  { label: 'Install Node', cmd: 'pkg install -y nodejs', desc: 'Install Node.js' },
-  { label: 'Install Java 21', cmd: 'pkg install -y openjdk-21', desc: 'Install OpenJDK 21' },
-  { label: 'Install zsh', cmd: 'pkg install -y zsh && chsh -s zsh', desc: 'Install & set zsh as default' },
-  { label: 'Install Git', cmd: 'pkg install -y git', desc: 'Install Git' },
-  { label: 'Install yarn', cmd: 'npm install -g yarn', desc: 'Install Yarn globally' },
-]
+const WS_URL = 'ws://localhost:7681'
+const PING_URL = 'http://localhost:7681/ping'
 
-const QUICK_COMMANDS = [
-  { label: '📁 Home', cmd: 'cd ~ && ls' },
-  { label: '📦 Storage', cmd: 'termux-setup-storage' },
-  { label: '🔄 Update', cmd: 'pkg update -y' },
-  { label: '🌐 IP', cmd: 'curl ifconfig.me' },
-  { label: '💾 Disk', cmd: 'df -h' },
-  { label: '🖥 Info', cmd: 'uname -a' },
-]
-
-type LogEntry = { type: 'info' | 'success' | 'error' | 'cmd'; text: string }
+type ConnState = 'disconnected' | 'connecting' | 'connected' | 'error'
 
 export default function Terminal() {
-  const [log, setLog] = useState<LogEntry[]>([
-    { type: 'info', text: 'DAVGpt Terminal — Termux Bridge' },
-    { type: 'info', text: 'Tap a command below or type your own.' },
-  ])
+  const [output, setOutput] = useState<string>('')
   const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [connState, setConnState] = useState<ConnState>('disconnected')
+  const [history, setHistory] = useState<string[]>([])
+  const [histIdx, setHistIdx] = useState(-1)
+  const wsRef = useRef<WebSocket | null>(null)
+  const outputRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  const addLog = (entry: LogEntry) => setLog(prev => [...prev, entry])
+  const append = (text: string) => {
+    setOutput(prev => prev + text)
+    setTimeout(() => {
+      if (outputRef.current)
+        outputRef.current.scrollTop = outputRef.current.scrollHeight
+    }, 20)
+  }
 
-  const runInTermux = async (cmd: string) => {
-    if (loading) return
-    setLoading(true)
-    addLog({ type: 'cmd', text: `$ ${cmd}` })
+  const connect = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) return
+    setConnState('connecting')
+    append('\r\n🔌 Connecting to Termux bridge...\r\n')
+
     try {
-      await Termux.runCommand({ command: cmd })
-      addLog({ type: 'success', text: '✓ Sent to Termux' })
-    } catch (e: any) {
-      addLog({ type: 'error', text: `✗ ${e.message ?? 'Failed — is Termux installed?'}` })
-    } finally {
-      setLoading(false)
+      const ws = new WebSocket(WS_URL)
+      wsRef.current = ws
+
+      ws.onopen = () => {
+        setConnState('connected')
+        append('✅ Connected!\r\n')
+      }
+
+      ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data)
+          if (msg.type === 'ready') append(msg.msg)
+          else if (msg.type === 'output') append(msg.data)
+          else if (msg.type === 'exit') {
+            append(`\r\n[Process exited: ${msg.code}]\r\n`)
+            setConnState('disconnected')
+          }
+        } catch {
+          append(e.data)
+        }
+      }
+
+      ws.onclose = () => {
+        setConnState('disconnected')
+        append('\r\n🔴 Disconnected\r\n')
+      }
+
+      ws.onerror = () => {
+        setConnState('error')
+        append('\r\n❌ Cannot connect. Is the bridge running in Termux?\r\n')
+        append('   Run: node ~/davgpt-bridge.js\r\n\r\n')
+      }
+    } catch (e) {
+      setConnState('error')
+      append('\r\n❌ WebSocket error\r\n')
+    }
+  }, [])
+
+  const disconnect = () => {
+    wsRef.current?.close()
+    wsRef.current = null
+    setConnState('disconnected')
+  }
+
+  const send = (data: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'input', data }))
     }
   }
 
-  const openTermux = async () => {
-    try {
-      await Termux.openTermux()
-      addLog({ type: 'success', text: '✓ Opened Termux' })
-    } catch (e: any) {
-      addLog({ type: 'error', text: `✗ ${e.message}` })
-    }
-  }
-
-  const handleInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && input.trim()) {
-      runInTermux(input.trim())
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const cmd = input
+      if (cmd && connState === 'connected') {
+        send(cmd + '\n')
+        setHistory(prev => [cmd, ...prev.slice(0, 49)])
+        setHistIdx(-1)
+      } else if (cmd.startsWith('node ~/') || cmd === 'node davgpt-bridge.js') {
+        append('\r\n⚠️  Run commands in Termux, not here. Connect first.\r\n')
+      }
       setInput('')
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      const next = Math.min(histIdx + 1, history.length - 1)
+      setHistIdx(next)
+      setInput(history[next] ?? '')
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      const next = Math.max(histIdx - 1, -1)
+      setHistIdx(next)
+      setInput(next === -1 ? '' : history[next])
+    } else if (e.key === 'c' && e.ctrlKey) {
+      send('\x03') // SIGINT
+    } else if (e.key === 'l' && e.ctrlKey) {
+      send('\x0c') // clear
+    } else if (e.key === 'd' && e.ctrlKey) {
+      send('\x04') // EOF
     }
   }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    addLog({ type: 'info', text: '📋 Copied to clipboard' })
-  }
+  // Auto-scroll
+  useEffect(() => {
+    if (outputRef.current)
+      outputRef.current.scrollTop = outputRef.current.scrollHeight
+  }, [output])
+
+  const stateColor = {
+    disconnected: '#64748b',
+    connecting: '#fbbf24',
+    connected: '#34d399',
+    error: '#f87171',
+  }[connState]
+
+  const stateLabel = {
+    disconnected: '● Disconnected',
+    connecting: '◌ Connecting...',
+    connected: '● Connected',
+    error: '● Error',
+  }[connState]
 
   return (
     <div className="terminal-page">
-      {/* Header */}
+      {/* Top bar */}
       <div className="term-header">
         <span className="term-title">⌨️ Terminal</span>
-        <button className="open-termux-btn" onClick={openTermux}>
-          Open Termux ↗
-        </button>
+        <span className="conn-status" style={{ color: stateColor }}>{stateLabel}</span>
+        <div className="term-actions">
+          {connState !== 'connected' ? (
+            <button className="term-action-btn connect" onClick={connect}>Connect</button>
+          ) : (
+            <button className="term-action-btn disconnect" onClick={disconnect}>Disconnect</button>
+          )}
+          <button className="term-action-btn" onClick={() => setOutput('')}>Clear</button>
+        </div>
       </div>
 
-      {/* Log output */}
-      <div className="term-log">
-        {log.map((entry, i) => (
-          <div key={i} className={`log-line log-${entry.type}`}>
-            {entry.text}
-          </div>
-        ))}
-        {loading && <div className="log-line log-info blink">Running...</div>}
+      {/* Setup hint when disconnected */}
+      {connState !== 'connected' && (
+        <div className="bridge-hint">
+          <p>1. Open Termux and run:</p>
+          <code>node ~/davgpt-bridge.js</code>
+          <p>2. Come back and tap <strong>Connect</strong></p>
+          <p className="hint-sub">First time? Copy the bridge file:</p>
+          <code style={{fontSize:'0.7rem'}}>curl -sL https://raw.githubusercontent.com/cptleftnut/DAVGpt/main/davgpt-bridge.js -o ~/davgpt-bridge.js</code>
+        </div>
+      )}
+
+      {/* Terminal output */}
+      <div
+        className="term-output"
+        ref={outputRef}
+        onClick={() => inputRef.current?.focus()}
+      >
+        <pre>{output}</pre>
       </div>
 
-      {/* Custom command input */}
+      {/* Input */}
       <div className="term-input-row">
-        <span className="prompt">$</span>
+        <span className="prompt" style={{ color: connState === 'connected' ? '#34d399' : '#475569' }}>$</span>
         <input
+          ref={inputRef}
           className="term-input"
           value={input}
           onChange={e => setInput(e.target.value)}
-          onKeyDown={handleInput}
-          placeholder="Type a command and press Enter..."
+          onKeyDown={handleKeyDown}
+          placeholder={connState === 'connected' ? 'Type command...' : 'Connect first...'}
+          disabled={connState !== 'connected'}
           spellCheck={false}
           autoCapitalize="none"
           autoCorrect="off"
         />
-      </div>
-
-      {/* Quick commands */}
-      <div className="term-section-label">Quick Commands</div>
-      <div className="quick-grid">
-        {QUICK_COMMANDS.map(q => (
-          <button key={q.label} className="quick-btn" onClick={() => runInTermux(q.cmd)}>
-            {q.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Setup commands */}
-      <div className="term-section-label">Setup Scripts</div>
-      <div className="setup-list">
-        {SETUP_COMMANDS.map(s => (
-          <div key={s.label} className="setup-item">
-            <div className="setup-info">
-              <span className="setup-label">{s.label}</span>
-              <span className="setup-desc">{s.desc}</span>
-            </div>
-            <div className="setup-actions">
-              <button className="setup-copy" onClick={() => copyToClipboard(s.cmd)}>Copy</button>
-              <button className="setup-run" onClick={() => runInTermux(s.cmd)}>Run</button>
-            </div>
+        {connState === 'connected' && (
+          <div className="ctrl-btns">
+            <button className="ctrl-btn" onClick={() => send('\x03')}>^C</button>
+            <button className="ctrl-btn" onClick={() => send('\x09')}>Tab</button>
+            <button className="ctrl-btn" onClick={() => send('\x0c')}>^L</button>
           </div>
-        ))}
+        )}
       </div>
     </div>
   )
