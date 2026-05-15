@@ -1,0 +1,100 @@
+.bubble {
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.user-bubble {
+  background: var(--user-bubble);
+  color: white;
+  border-bottom-right-radius: 4px;
+  white-space: pre-wrap;
+}
+
+.ai-bubble {
+  background: var(--ai-bubble);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+}
+
+.text-block {
+  white-space: pre-wrap;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* Code block */
+.code-block {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #1e293b;
+  background: #060610;
+}
+
+.code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: #0f0f1e;
+  border-bottom: 1px solid #1e293b;
+}
+
+.code-lang {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  font-family: monospace;
+}
+
+.code-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.code-btn {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 5px;
+  color: #94a3b8;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.run-btn {
+  background: #14532d;
+  border-color: #166534;
+  color: #86efac;
+}
+
+.run-btn.ran {
+  background: #166534;
+  color: #4ade80;
+}
+
+.run-btn.offline {
+  background: #1e293b;
+  border-color: #334155;
+  color: #64748b;
+}
+
+.code-body {
+  margin: 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  line-height: 1.6;
+  white-space: pre;
+}

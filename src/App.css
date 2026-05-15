@@ -408,3 +408,35 @@
 }
 
 .skill-btn:disabled { opacity: 0.3; }
+
+/* ── Terminal status indicator in header ── */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mini-conn {
+  font-size: 1rem;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+.mini-conn.connected { opacity: 1; filter: drop-shadow(0 0 4px #34d399); }
+
+/* ── Tab dot (connected indicator) ───────── */
+.tab-dot {
+  width: 6px;
+  height: 6px;
+  background: #34d399;
+  border-radius: 50%;
+  position: absolute;
+  top: 6px;
+  right: 20px;
+}
+
+/* ── Empty state hint ────────────────────── */
+.empty-hint {
+  font-size: 0.78rem;
+  color: #475569;
+  margin-top: 4px;
+}

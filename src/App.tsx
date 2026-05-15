@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import Terminal from './Terminal'
 import SkillsPanel, { Skill } from './Skills'
+import MessageBubble from './MessageBubble'
+import { useTerminalBridge } from './useTerminalBridge'
 import './App.css'
 
 interface Message {
@@ -28,47 +30,34 @@ const HERMES_SYSTEM = `You are a helpful AI assistant with access to tools. When
 </tool_call>
 
 Available tools:
-- web_search(query: string): Search the web for information
+- web_search(query: string): Search the web
 - calculate(expression: string): Evaluate a math expression
 - get_time(): Get the current date and time
-- summarize(text: string): Summarize a long piece of text
+- summarize(text: string): Summarize a long text
 
-After receiving a tool result, continue your response naturally. Always be helpful and thorough.`
+After receiving a tool result, continue your response naturally.`
 
-// Parse Hermes <tool_call> blocks
-function parseToolCall(content: string): { name: string; args: any } | null {
+function parseToolCall(content: string) {
   const match = content.match(/<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/)
   if (!match) return null
   try { return JSON.parse(match[1]) } catch { return null }
 }
 
-// Execute tool locally
 async function executeTool(name: string, args: any): Promise<string> {
   switch (name) {
     case 'calculate':
-      try {
-        // Safe eval for math only
-        const result = Function(`"use strict"; return (${args.expression})`)()
-        return `Result: ${result}`
-      } catch { return 'Error: invalid expression' }
-    case 'get_time':
-      return `Current time: ${new Date().toLocaleString()}`
-    case 'summarize':
-      return `[Summary requested for ${args.text?.length ?? 0} characters of text — summarize in your next response]`
-    case 'web_search':
-      return `[Web search for "${args.query}" — use your training knowledge to answer as best you can]`
-    default:
-      return `[Tool "${name}" not available]`
+      try { return `Result: ${Function(`"use strict"; return (${args.expression})`)()}` } catch { return 'Error: invalid expression' }
+    case 'get_time': return `Current time: ${new Date().toLocaleString()}`
+    case 'summarize': return `[Summarize the following in your next response]`
+    case 'web_search': return `[Search: "${args.query}" — use training knowledge]`
+    default: return `[Tool "${name}" unavailable]`
   }
 }
 
-function renderContent(content: string) {
-  // Strip tool_call blocks from display
-  const clean = content.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').trim()
-  return clean
-}
-
-function Chat() {
+function Chat({ bridge, switchToTerminal }: {
+  bridge: ReturnType<typeof useTerminalBridge>
+  switchToTerminal: () => void
+}) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('davgpt_groq_key') || '')
@@ -86,18 +75,12 @@ function Chat() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  const saveKey = () => {
-    localStorage.setItem('davgpt_groq_key', apiKey)
-    setShowSettings(false)
-  }
+  const saveKey = () => { localStorage.setItem('davgpt_groq_key', apiKey); setShowSettings(false) }
 
   const onSkillSelect = (skill: Skill) => {
     setActiveSkill(skill)
     if (skill.inputTemplate) setInput(skill.inputTemplate)
-    if (textareaRef.current) {
-      textareaRef.current.focus()
-      textareaRef.current.style.height = 'auto'
-    }
+    textareaRef.current?.focus()
   }
 
   const buildApiMessages = (msgs: Message[]) => {
@@ -107,14 +90,12 @@ function Chat() {
     for (const m of msgs) {
       if (m.role === 'system') continue
       result.push({ role: m.role, content: m.content })
-      if (m.toolResult) {
-        result.push({ role: 'user', content: `<tool_response>\n${m.toolResult}\n</tool_response>` })
-      }
+      if (m.toolResult) result.push({ role: 'user', content: `<tool_response>\n${m.toolResult}\n</tool_response>` })
     }
     return result
   }
 
-  const callGroq = async (msgs: Message[]): Promise<string> => {
+  const callGroq = async (msgs: Message[]) => {
     const res = await fetch(GROQ_BASE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
@@ -124,45 +105,37 @@ function Chat() {
     return data.choices?.[0]?.message?.content ?? data.error?.message ?? 'No response'
   }
 
+  const handleRunCommand = (cmd: string): boolean => {
+    const ok = bridge.sendCommand(cmd)
+    if (ok) switchToTerminal()
+    return ok
+  }
+
   const send = async () => {
     const text = input.trim()
     if (!text || loading || !apiKey) return
-
     const userMsg: Message = { id: Date.now(), role: 'user', content: text }
     let history = [...messages, userMsg]
     setMessages(history)
     setInput('')
     setLoading(true)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
-
     try {
       let reply = await callGroq(history)
       const toolCall = isHermes ? parseToolCall(reply) : null
-
       if (toolCall) {
-        // Show assistant message with tool call
-        const assistantMsg: Message = {
-          id: Date.now(),
-          role: 'assistant',
-          content: reply,
-          toolCall,
-        }
+        const assistantMsg: Message = { id: Date.now(), role: 'assistant', content: reply, toolCall }
         history = [...history, assistantMsg]
         setMessages(history)
-
-        // Execute tool
         const toolResult = await executeTool(toolCall.name, toolCall.args)
-        const msgWithResult: Message = { ...assistantMsg, toolResult }
-        history = [...history.slice(0, -1), msgWithResult]
+        const withResult: Message = { ...assistantMsg, toolResult }
+        history = [...history.slice(0, -1), withResult]
         setMessages(history)
-
-        // Get final response after tool result
         reply = await callGroq(history)
         history = [...history, { id: Date.now() + 1, role: 'assistant', content: reply }]
       } else {
         history = [...history, { id: Date.now(), role: 'assistant', content: reply }]
       }
-
       setMessages(history)
     } catch (e: any) {
       setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: `Error: ${e.message}` }])
@@ -190,12 +163,13 @@ function Chat() {
             {MODELS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
           </select>
         </div>
-        <button className="icon-btn" onClick={() => setShowSettings(true)}>⚙️</button>
+        <div className="header-right">
+          <span className={`mini-conn ${bridge.connState}`} title={`Terminal: ${bridge.connState}`}>⌨️</span>
+          <button className="icon-btn" onClick={() => setShowSettings(true)}>⚙️</button>
+        </div>
       </header>
 
-      {showSkills && (
-        <SkillsPanel onSelect={onSkillSelect} onClose={() => setShowSkills(false)} />
-      )}
+      {showSkills && <SkillsPanel onSelect={onSkillSelect} onClose={() => setShowSkills(false)} />}
 
       {activeSkill && !isHermes && (
         <div className="skill-banner">
@@ -204,26 +178,15 @@ function Chat() {
         </div>
       )}
 
-      {isHermes && (
-        <div className="agent-banner">
-          🤖 Hermes Agent Mode — tool calling enabled
-        </div>
-      )}
+      {isHermes && <div className="agent-banner">🤖 Hermes Agent Mode — tool calling enabled</div>}
 
       {showSettings && (
         <div className="modal-overlay" onClick={() => apiKey && setShowSettings(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h2>Settings</h2>
             <label>Groq API Key</label>
-            <input
-              type="password"
-              className="key-input"
-              placeholder="gsk_..."
-              value={apiKey}
-              onChange={e => setApiKey(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && saveKey()}
-              autoFocus
-            />
+            <input type="password" className="key-input" placeholder="gsk_..." value={apiKey}
+              onChange={e => setApiKey(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveKey()} autoFocus />
             <p className="hint">Get your free key at console.groq.com — stored locally only.</p>
             <button className="btn-primary" onClick={saveKey} disabled={!apiKey}>Save & Continue</button>
           </div>
@@ -234,28 +197,24 @@ function Chat() {
         {messages.length === 0 && !loading && (
           <div className="empty-state">
             <div className="empty-icon">✦</div>
-            <p>{isHermes ? 'Hermes Agent ready. I can use tools to help you.' : 'How can I help you today?'}</p>
+            <p>{isHermes ? 'Hermes Agent ready.' : 'How can I help you today?'}</p>
+            {bridge.connState !== 'connected' && (
+              <p className="empty-hint">💡 Connect Terminal to run AI-suggested commands directly</p>
+            )}
           </div>
         )}
-        {messages.map(msg => (
-          <div key={msg.id}>
-            {msg.role !== 'system' && (
-              <div className={`msg msg-${msg.role}`}>
-                <div className="bubble">
-                  {renderContent(msg.content)}
-                  {msg.toolCall && (
-                    <div className="tool-call">
-                      <span className="tool-tag">🔧 {msg.toolCall.name}</span>
-                      <code>{JSON.stringify(msg.toolCall.args)}</code>
-                    </div>
-                  )}
-                  {msg.toolResult && (
-                    <div className="tool-result">
-                      <span className="tool-tag">📤 result</span>
-                      <code>{msg.toolResult}</code>
-                    </div>
-                  )}
-                </div>
+        {messages.map(msg => msg.role !== 'system' && (
+          <div key={msg.id} className={`msg msg-${msg.role}`}>
+            <MessageBubble
+              content={msg.content}
+              role={msg.role as 'user' | 'assistant'}
+              onRunCommand={msg.role === 'assistant' ? handleRunCommand : undefined}
+              connState={bridge.connState}
+            />
+            {msg.toolCall && (
+              <div className="tool-call">
+                <span className="tool-tag">🔧 {msg.toolCall.name}</span>
+                <code>{JSON.stringify(msg.toolCall.args)}</code>
               </div>
             )}
           </div>
@@ -270,19 +229,13 @@ function Chat() {
 
       <footer className="input-bar">
         <div className="input-wrap">
-          <textarea
-            ref={textareaRef}
-            className="input"
-            rows={1}
-            placeholder={apiKey ? (isHermes ? 'Ask Hermes Agent...' : activeSkill ? activeSkill.placeholder : 'Message DAVGpt...') : 'Add your Groq API key in settings first'}
-            value={input}
-            onChange={autoResize}
-            onKeyDown={onKeyDown}
-            disabled={!apiKey || loading}
-          />
           {!isHermes && (
             <button className="skill-btn" onClick={() => setShowSkills(true)} disabled={!apiKey}>⚡</button>
           )}
+          <textarea ref={textareaRef} className="input" rows={1}
+            placeholder={apiKey ? (isHermes ? 'Ask Hermes Agent...' : activeSkill ? activeSkill.placeholder : 'Message DAVGpt...') : 'Add your Groq API key in settings first'}
+            value={input} onChange={autoResize} onKeyDown={onKeyDown} disabled={!apiKey || loading}
+          />
           <button className="send-btn" onClick={send} disabled={!input.trim() || loading || !apiKey}>↑</button>
         </div>
       </footer>
@@ -292,10 +245,15 @@ function Chat() {
 
 export default function App() {
   const [tab, setTab] = useState<'chat' | 'terminal'>('chat')
+  const bridge = useTerminalBridge()
+
   return (
     <div className="app">
       <div className="tab-content">
-        {tab === 'chat' ? <Chat /> : <Terminal />}
+        {tab === 'chat'
+          ? <Chat bridge={bridge} switchToTerminal={() => setTab('terminal')} />
+          : <Terminal bridge={bridge} />
+        }
       </div>
       <nav className="tab-bar">
         <button className={`tab-btn ${tab === 'chat' ? 'active' : ''}`} onClick={() => setTab('chat')}>
@@ -305,6 +263,7 @@ export default function App() {
         <button className={`tab-btn ${tab === 'terminal' ? 'active' : ''}`} onClick={() => setTab('terminal')}>
           <span className="tab-icon">⌨️</span>
           <span className="tab-label">Terminal</span>
+          {bridge.connState === 'connected' && <span className="tab-dot" />}
         </button>
       </nav>
     </div>
