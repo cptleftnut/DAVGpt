@@ -1,0 +1,230 @@
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  display: flex;
+}
+
+.sidebar {
+  width: 82%;
+  max-width: 320px;
+  height: 100%;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sb-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent2), #c4b5fd);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sb-close {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+/* Tabs */
+.sb-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sb-tab {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+
+.sb-tab.active {
+  color: var(--accent2);
+  border-bottom-color: var(--accent2);
+}
+
+/* New chat button */
+.new-chat-btn {
+  margin: 10px 12px;
+  padding: 10px;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  flex-shrink: 0;
+}
+
+/* Session list */
+.sb-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 8px;
+}
+
+.sb-list::-webkit-scrollbar { width: 3px; }
+.sb-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+.sb-empty {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  text-align: center;
+  padding: 24px;
+}
+
+.sb-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sb-item:hover, .sb-item.active { background: var(--surface2); }
+.sb-item.active { border-left: 2px solid var(--accent2); padding-left: 6px; }
+
+.sb-env-icon { font-size: 1.1rem; flex-shrink: 0; }
+
+.sb-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sb-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sb-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.rename-input {
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  color: var(--text);
+  font-size: 0.85rem;
+  padding: 2px 6px;
+  width: 100%;
+  outline: none;
+}
+
+.sb-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.sb-item:hover .sb-actions { opacity: 1; }
+
+.sb-action {
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 5px;
+}
+
+.sb-action.del:hover { background: #450a0a; }
+
+/* Environment cards */
+.env-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+}
+
+.env-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.env-icon { font-size: 1.2rem; }
+
+.env-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.env-name { font-size: 0.88rem; font-weight: 600; color: var(--text); }
+.env-model { font-size: 0.7rem; color: var(--text-muted); font-family: monospace; }
+
+.use-env-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: 7px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.env-prompt {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.new-env-btn {
+  margin: 10px 12px;
+  padding: 10px;
+  background: var(--surface2);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}

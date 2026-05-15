@@ -497,3 +497,47 @@
   border-color: var(--accent);
   color: white;
 }
+
+/* ── Sidebar / Session header ──────────── */
+.menu-btn {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  flex-shrink: 0;
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.session-env-icon { font-size: 1rem; flex-shrink: 0; }
+
+.session-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empty-env-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.empty-hint-sub {
+  font-size: 0.75rem;
+  color: #475569;
+  max-width: 260px;
+  text-align: center;
+  line-height: 1.4;
+}
