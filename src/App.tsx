@@ -5,6 +5,8 @@ import MessageBubble from './MessageBubble'
 import Sidebar from './Sidebar'
 import { useTerminalBridge } from './useTerminalBridge'
 import { useTTS, useSTT } from './useSpeech'
+import MCPPanel from './MCPPanel'
+import { type MCPServer, loadMCPServers, callMCPTool } from './mcp'
 import {
   type Session, type Environment, type Message,
   loadSessions, saveSessions, loadActiveId, saveActiveId,
@@ -30,13 +32,15 @@ async function executeTool(name: string, args: any): Promise<string> {
   }
 }
 
-function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, switchToTerminal }: {
+function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, switchToTerminal, mcpServers, onOpenMCP }: {
   session: Session
   environments: Environment[]
   onUpdateSession: (s: Session) => void
   onOpenSidebar: () => void
   bridge: ReturnType<typeof useTerminalBridge>
   switchToTerminal: () => void
+  mcpServers: MCPServer[]
+  onOpenMCP: () => void
 }) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -68,7 +72,14 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
   }
 
   const buildApiMessages = (msgs: Message[]) => {
-    const result: any[] = [{ role: 'system', content: activeSkill ? activeSkill.systemPrompt : env.systemPrompt }]
+    const connected = mcpServers.filter(s => s.connected)
+    const mcpContext = connected.length > 0
+      ? '\n\nYou have access to these MCP integrations:\n' + connected.map(s =>
+          `- ${s.name} (${s.icon}): ${s.tools?.map(t => t.name).join(', ') || 'connected'}`
+        ).join('\n') +
+        '\n\nTo use an MCP tool, include in your response:\n<mcp_call>{"server":"server_id","tool":"tool_name","args":{}}</mcp_call>'
+      : ''
+    const result: any[] = [{ role: 'system', content: (activeSkill ? activeSkill.systemPrompt : env.systemPrompt) + mcpContext }]
     for (const m of msgs) {
       if (m.role === 'system') continue
       result.push({ role: m.role, content: m.content })
@@ -104,6 +115,26 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     try {
       let reply = await callGroq(msgs)
+
+      // Handle MCP tool calls
+      const mcpMatch = reply.match(/<mcp_call>([\s\S]*?)<\/mcp_call>/)
+      if (mcpMatch) {
+        try {
+          const { server: serverId, tool, args } = JSON.parse(mcpMatch[1])
+          const srv = mcpServers.find(s => s.id === serverId && s.connected)
+          if (srv) {
+            const mcpResult = await callMCPTool(srv, tool, args)
+            const cleanReply = reply.replace(/<mcp_call>[\s\S]*?<\/mcp_call>/, '').trim()
+            const aMsg: Message = { id: Date.now(), role: 'assistant', content: cleanReply || `Using ${srv.name}...`, toolCall: { name: `${srv.icon} ${tool}`, args } }
+            msgs = [...msgs, aMsg]
+            updateMessages(msgs)
+            msgs = [...msgs.slice(0,-1), { ...aMsg, toolResult: mcpResult }]
+            updateMessages(msgs)
+            reply = await callGroq([...msgs, { id: 0, role: 'user' as const, content: `MCP Result from ${srv.name}:\n${mcpResult}` }])
+          }
+        } catch (_) {}
+      }
+
       const toolCall = isHermes ? parseToolCall(reply) : null
       if (toolCall) {
         const aMsg: Message = { id: Date.now(), role: 'assistant', content: reply, toolCall }
@@ -142,6 +173,9 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
           <span className="session-name">{session.name}</span>
         </div>
         <div className="header-right">
+          <button className="icon-btn" onClick={onOpenMCP} title="MCP Servers">
+            🔌{mcpServers.filter(s=>s.connected).length > 0 && <span className="mcp-badge">{mcpServers.filter(s=>s.connected).length}</span>}
+          </button>
           <span className={`mini-conn ${bridge.connState}`}>⌨️</span>
           <button className="icon-btn" onClick={() => setShowSettings(true)}>⚙️</button>
         </div>
@@ -224,6 +258,8 @@ export default function App() {
   const bridge = useTerminalBridge()
 
   const [environments] = useState<Environment[]>(() => loadEnvironments())
+  const [mcpServers, setMcpServers] = useState<MCPServer[]>(() => loadMCPServers())
+  const [showMCP, setShowMCP] = useState(false)
   const [sessions, setSessions] = useState<Session[]>(() => {
     const saved = loadSessions()
     if (saved.length === 0) {
@@ -281,6 +317,10 @@ export default function App() {
 
   return (
     <div className="app">
+      {showMCP && (
+        <MCPPanel onClose={() => setShowMCP(false)} onServersChange={setMcpServers} />
+      )}
+
       {showSidebar && (
         <Sidebar
           sessions={sessions}
@@ -306,6 +346,8 @@ export default function App() {
               onOpenSidebar={() => setShowSidebar(true)}
               bridge={bridge}
               switchToTerminal={() => setTab('terminal')}
+              mcpServers={mcpServers}
+              onOpenMCP={() => setShowMCP(true)}
             />
           )
         ) : (
