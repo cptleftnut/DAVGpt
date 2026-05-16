@@ -6,6 +6,9 @@ import Sidebar from './Sidebar'
 import { useTerminalBridge } from './useTerminalBridge'
 import { useTTS, useSTT } from './useSpeech'
 import MCPPanel from './MCPPanel'
+import Cortex from './Cortex'
+import { addBlock, getChainContext } from './soma'
+import { loadIrisProfile, routeMessage } from './iris'
 import AgentPanel from './AgentPanel'
 import { type MCPServer, loadMCPServers, callMCPTool } from './mcp'
 import {
@@ -90,10 +93,12 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
   }
 
   const callGroq = async (msgs: Message[]) => {
+    const irisProfile = loadIrisProfile()
+    const routed = routeMessage(irisProfile, (environments.find(e => e.id === session.environmentId) || environments[0]).systemPrompt)
     const res = await fetch(GROQ_BASE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: session.model, messages: buildApiMessages(msgs) }),
+      body: JSON.stringify({ model: session.model, max_tokens: routed.maxTokens, temperature: routed.temperature, messages: buildApiMessages(msgs) }),
     })
     const data = await res.json()
     return data.choices?.[0]?.message?.content ?? data.error?.message ?? 'No response'
@@ -149,6 +154,9 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
       msgs = [...msgs, { id: Date.now()+1, role: 'assistant', content: reply }]
       updateMessages(msgs)
       if (tts.autoSpeak) tts.speak(reply)
+      // Store in SOMA chain
+      addBlock({ type: 'context', content: `User: ${text}`, source: 'user', tags: [session.environmentId] })
+      addBlock({ type: 'context', content: `AI: ${reply.slice(0, 200)}`, source: 'agent', tags: [session.environmentId] })
     } catch (e: any) {
       msgs = [...msgs, { id: Date.now(), role: 'assistant', content: `Error: ${e.message}` }]
       updateMessages(msgs)
@@ -254,7 +262,7 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
 }
 
 export default function App() {
-  const [tab, setTab] = useState<'chat' | 'terminal' | 'agent'>('chat')
+  const [tab, setTab] = useState<'chat' | 'terminal' | 'agent' | 'cortex'>('chat')
   const [showSidebar, setShowSidebar] = useState(false)
   const bridge = useTerminalBridge()
 
@@ -353,7 +361,7 @@ export default function App() {
           )
         ) : tab === 'terminal' ? (
           <Terminal bridge={bridge} />
-        ) : (
+        ) : tab === 'agent' ? (
           <AgentPanel
             apiKey={localStorage.getItem('davgpt_groq_key') || ''}
             sendCommand={bridge.sendCommand}
@@ -361,6 +369,12 @@ export default function App() {
             onOutput={bridge.onOutput}
             mcpServers={mcpServers}
             switchToTerminal={() => setTab('terminal')}
+          />
+        ) : (
+          <Cortex
+            apiKey={localStorage.getItem('davgpt_groq_key') || ''}
+            sendCommand={bridge.sendCommand}
+            connState={bridge.connState}
           />
         )}
       </div>
@@ -378,6 +392,10 @@ export default function App() {
         <button className={`tab-btn ${tab === 'agent' ? 'active' : ''}`} onClick={() => setTab('agent')}>
           <span className="tab-icon">⚡</span>
           <span className="tab-label">KIRA</span>
+        </button>
+        <button className={`tab-btn ${tab === 'cortex' ? 'active' : ''}`} onClick={() => setTab('cortex')}>
+          <span className="tab-icon">◈</span>
+          <span className="tab-label">CORTEX</span>
         </button>
       </nav>
     </div>
