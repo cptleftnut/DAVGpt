@@ -10,6 +10,9 @@ import Cortex from './Cortex'
 import { addBlock, getChainContext } from './soma'
 import { loadIrisProfile, routeMessage } from './iris'
 import AgentPanel from './AgentPanel'
+import Cortex from './Cortex'
+import { addBlock, getChainContext } from './soma'
+import { loadIrisProfile, routeMessage, IRIS_ROUTES } from './iris'
 import { type MCPServer, loadMCPServers, callMCPTool } from './mcp'
 import {
   type Session, type Environment, type Message,
@@ -56,6 +59,8 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const env = environments.find(e => e.id === session.environmentId) || environments[0]
+  const irisProfile = loadIrisProfile()
+  const irisRoute = IRIS_ROUTES[irisProfile]
   const isHermes = session.environmentId === 'hermes'
 
   const tts = useTTS()
@@ -83,7 +88,8 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
         ).join('\n') +
         '\n\nTo use an MCP tool, include in your response:\n<mcp_call>{"server":"server_id","tool":"tool_name","args":{}}</mcp_call>'
       : ''
-    const result: any[] = [{ role: 'system', content: (activeSkill ? activeSkill.systemPrompt : env.systemPrompt) + mcpContext }]
+    const somaCtx = getChainContext(6)
+    const result: any[] = [{ role: 'system', content: (activeSkill ? activeSkill.systemPrompt : env.systemPrompt) + mcpContext + somaCtx }]
     for (const m of msgs) {
       if (m.role === 'system') continue
       result.push({ role: m.role, content: m.content })
@@ -114,6 +120,7 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
     const text = input.trim()
     if (!text || loading || !apiKey) return
     const userMsg: Message = { id: Date.now(), role: 'user', content: text }
+    addBlock({ type: 'context', content: text, source: 'user', tags: ['chat', session.environmentId] })
     let msgs = [...session.messages, userMsg]
     updateMessages(msgs)
     setInput('')
@@ -153,6 +160,7 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
       }
       msgs = [...msgs, { id: Date.now()+1, role: 'assistant', content: reply }]
       updateMessages(msgs)
+      addBlock({ type: 'context', content: reply.slice(0,300), source: 'agent', tags: ['chat', 'response'] })
       if (tts.autoSpeak) tts.speak(reply)
       // Store in SOMA chain
       addBlock({ type: 'context', content: `User: ${text}`, source: 'user', tags: [session.environmentId] })
@@ -392,6 +400,10 @@ export default function App() {
         <button className={`tab-btn ${tab === 'agent' ? 'active' : ''}`} onClick={() => setTab('agent')}>
           <span className="tab-icon">⚡</span>
           <span className="tab-label">KIRA</span>
+        </button>
+        <button className={`tab-btn ${tab === 'cortex' ? 'active' : ''}`} onClick={() => setTab('cortex')}>
+          <span className="tab-icon">◈</span>
+          <span className="tab-label">CORTEX</span>
         </button>
         <button className={`tab-btn ${tab === 'cortex' ? 'active' : ''}`} onClick={() => setTab('cortex')}>
           <span className="tab-icon">◈</span>
