@@ -6,6 +6,7 @@ import Sidebar from './Sidebar'
 import { useTerminalBridge } from './useTerminalBridge'
 import { useTTS, useSTT } from './useSpeech'
 import MCPPanel from './MCPPanel'
+import AgentPanel from './AgentPanel'
 import { type MCPServer, loadMCPServers, callMCPTool } from './mcp'
 import {
   type Session, type Environment, type Message,
@@ -253,7 +254,7 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
 }
 
 export default function App() {
-  const [tab, setTab] = useState<'chat' | 'terminal'>('chat')
+  const [tab, setTab] = useState<'chat' | 'terminal' | 'agent'>('chat')
   const [showSidebar, setShowSidebar] = useState(false)
   const bridge = useTerminalBridge()
 
@@ -350,8 +351,17 @@ export default function App() {
               onOpenMCP={() => setShowMCP(true)}
             />
           )
-        ) : (
+        ) : tab === 'terminal' ? (
           <Terminal bridge={bridge} />
+        ) : (
+          <AgentPanel
+            apiKey={localStorage.getItem('davgpt_groq_key') || ''}
+            sendCommand={bridge.sendCommand}
+            connState={bridge.connState}
+            onOutput={bridge.onOutput}
+            mcpServers={mcpServers}
+            switchToTerminal={() => setTab('terminal')}
+          />
         )}
       </div>
 
@@ -364,6 +374,10 @@ export default function App() {
           <span className="tab-icon">⌨️</span>
           <span className="tab-label">Terminal</span>
           {bridge.connState === 'connected' && <span className="tab-dot" />}
+        </button>
+        <button className={`tab-btn ${tab === 'agent' ? 'active' : ''}`} onClick={() => setTab('agent')}>
+          <span className="tab-icon">⚡</span>
+          <span className="tab-label">KIRA</span>
         </button>
       </nav>
     </div>
