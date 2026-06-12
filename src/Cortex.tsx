@@ -92,8 +92,9 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
       addDaemonMonologue(content, trigger)
       await addBlock({ type: 'monologue', content, source: 'daemon', tags: ['daemon'] })
       refresh()
-    } catch (e: any) {
-      addDaemonMonologue(`[Error: ${e.message}]`, trigger)
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      addDaemonMonologue(`[Error: ${errorMessage}]`, trigger)
     } finally {
       setDaemonRunning(false)
     }
@@ -237,7 +238,7 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
             </div>
             <div className="chain-list">
               {(somaResults.length > 0 ? somaResults : loadChain().slice(-20).reverse()).map(b => (
-                <div key={b.id} className={`chain-block type-${b.type}`}>
+                <div key={b.hash} className={`chain-block type-${b.type}`}>
                   <div className="block-header">
                     <span className="block-type">{b.type}</span>
                     <span className="block-src">{b.source}</span>

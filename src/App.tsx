@@ -8,11 +8,8 @@ import { useTTS, useSTT } from './useSpeech'
 import MCPPanel from './MCPPanel'
 import Cortex from './Cortex'
 import { addBlock, getChainContext } from './soma'
-import { loadIrisProfile, routeMessage } from './iris'
-import AgentPanel from './AgentPanel'
-import Cortex from './Cortex'
-import { addBlock, getChainContext } from './soma'
 import { loadIrisProfile, routeMessage, IRIS_ROUTES } from './iris'
+import AgentPanel from './AgentPanel'
 import { type MCPServer, loadMCPServers, callMCPTool } from './mcp'
 import {
   type Session, type Environment, type Message,
@@ -165,8 +162,9 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
       // Store in SOMA chain
       addBlock({ type: 'context', content: `User: ${text}`, source: 'user', tags: [session.environmentId] })
       addBlock({ type: 'context', content: `AI: ${reply.slice(0, 200)}`, source: 'agent', tags: [session.environmentId] })
-    } catch (e: any) {
-      msgs = [...msgs, { id: Date.now(), role: 'assistant', content: `Error: ${e.message}` }]
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      msgs = [...msgs, { id: Date.now(), role: 'assistant', content: `Error: ${errorMessage}` }]
       updateMessages(msgs)
     } finally { setLoading(false) }
   }

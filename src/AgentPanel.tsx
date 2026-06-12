@@ -194,8 +194,9 @@ export default function AgentPanel({ apiKey, sendCommand, connState, onOutput, m
         addStep({ type: 'error', content: `⚠️ Reached max steps (${MAX_STEPS}). Task may be incomplete.` })
         setStatus('error')
       }
-    } catch (e: any) {
-      addStep({ type: 'error', content: `Fatal error: ${e.message}` })
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      addStep({ type: 'error', content: `Fatal error: ${errorMessage}` })
       setStatus('error')
     }
 
