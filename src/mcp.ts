@@ -48,7 +48,7 @@ export const BUILTIN_SERVERS: Omit<MCPServer, 'connected' | 'token' | 'tools'>[]
     description: 'Read/write local files via Termux',
     url: 'http://localhost:7682/mcp',
     authType: 'none',
-    description: 'Requires davgpt-bridge running in Termux',
+
   },
   {
     id: 'notion',
