@@ -22,6 +22,20 @@ const server = http.createServer((req, res) => {
 })
 
 function wsHandshake(req, socket) {
+  const origin = req.headers.origin
+  const allowedOrigins = [
+    'http://localhost',
+    'http://localhost:5173',
+    'http://127.0.0.1',
+    'capacitor://localhost'
+  ]
+
+  if (origin && !allowedOrigins.includes(origin)) {
+    socket.write('HTTP/1.1 403 Forbidden\r\n\r\n')
+    socket.destroy()
+    return false
+  }
+
   const key = req.headers['sec-websocket-key']
   const accept = crypto
     .createHash('sha1')
@@ -32,8 +46,9 @@ function wsHandshake(req, socket) {
     'Upgrade: websocket\r\n' +
     'Connection: Upgrade\r\n' +
     `Sec-WebSocket-Accept: ${accept}\r\n` +
-    'Access-Control-Allow-Origin: *\r\n\r\n'
+    `Access-Control-Allow-Origin: ${origin || 'http://localhost'}\r\n\r\n`
   )
+  return true
 }
 
 function decodeFrame(buf) {
@@ -74,7 +89,7 @@ function encodeFrame(msg) {
 }
 
 server.on('upgrade', (req, socket) => {
-  wsHandshake(req, socket)
+  if (!wsHandshake(req, socket)) return
   console.log('[Bridge] Client connected')
 
   // Spawn a shell session per client
