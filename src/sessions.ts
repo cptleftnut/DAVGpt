@@ -116,7 +116,8 @@ export function loadEnvironments(): Environment[] {
 }
 
 export function saveCustomEnvironments(envs: Environment[]) {
-  const custom = envs.filter(e => !DEFAULT_ENVIRONMENTS.find(d => d.id === e.id))
+  const defaultIds = new Set(DEFAULT_ENVIRONMENTS.map(d => d.id))
+  const custom = envs.filter(e => !defaultIds.has(e.id))
   localStorage.setItem(ENVS_KEY, JSON.stringify(custom))
 }
 
