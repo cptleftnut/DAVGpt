@@ -122,14 +122,14 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
     setNewTask({ name: '', command: '', schedule: 'every60s' })
   }
 
-  const toggleTask = (id: string) => {
-    const updated = groundTasks.map(t => t.id === id ? { ...t, enabled: !t.enabled } : t)
+  const toggleTask = (blockId: string) => {
+    const updated = groundTasks.map(t => t.id === blockId ? { ...t, enabled: !t.enabled } : t)
     saveGroundTasks(updated)
     setGroundTasks(updated)
   }
 
-  const deleteTask = (id: string) => {
-    const updated = groundTasks.filter(t => t.id !== id)
+  const deleteTask = (blockId: string) => {
+    const updated = groundTasks.filter(t => t.id !== blockId)
     saveGroundTasks(updated)
     setGroundTasks(updated)
   }
@@ -237,7 +237,7 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
             </div>
             <div className="chain-list">
               {(somaResults.length > 0 ? somaResults : loadChain().slice(-20).reverse()).map(b => (
-                <div key={b.id} className={`chain-block type-${b.type}`}>
+                <div key={b.hash} className={`chain-block type-${b.type}`}>
                   <div className="block-header">
                     <span className="block-type">{b.type}</span>
                     <span className="block-src">{b.source}</span>

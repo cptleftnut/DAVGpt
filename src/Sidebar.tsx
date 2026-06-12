@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { Session, Environment } from './sessions'
 import { DEFAULT_ENVIRONMENTS } from './sessions'
 import './Sidebar.css'
@@ -35,7 +35,8 @@ export default function Sidebar({
     setRenamingId(null)
   }
 
-  const getEnv = (envId: string) => environments.find(e => e.id === envId)
+  const envMap = useMemo(() => new Map(environments.map(e => [e.id, e])), [environments])
+  const getEnv = (envId: string) => envMap.get(envId)
 
   return (
     <div className="sidebar-overlay" onClick={onClose}>
