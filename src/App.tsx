@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
+import { SecureStoragePlugin } from 'capacitor-secure-storage-plugin'
+
 import Terminal from './Terminal'
 import SkillsPanel, { Skill } from './Skills'
 import MessageBubble from './MessageBubble'
@@ -6,9 +8,6 @@ import Sidebar from './Sidebar'
 import { useTerminalBridge } from './useTerminalBridge'
 import { useTTS, useSTT } from './useSpeech'
 import MCPPanel from './MCPPanel'
-import Cortex from './Cortex'
-import { addBlock, getChainContext } from './soma'
-import { loadIrisProfile, routeMessage } from './iris'
 import AgentPanel from './AgentPanel'
 import Cortex from './Cortex'
 import { addBlock, getChainContext } from './soma'
@@ -51,10 +50,24 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
 }) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [showSettings, setShowSettings] = useState(!localStorage.getItem('davgpt_groq_key'))
+  const [showSettings, setShowSettings] = useState(false)
   const [showSkills, setShowSkills] = useState(false)
   const [activeSkill, setActiveSkill] = useState<Skill | null>(null)
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('davgpt_groq_key') || '')
+  const [apiKey, setApiKey] = useState('')
+
+  useEffect(() => {
+    SecureStoragePlugin.get({ key: 'davgpt_groq_key' })
+      .then(res => {
+        if (res.value) {
+          setApiKey(res.value)
+        } else {
+          setShowSettings(true)
+        }
+      })
+      .catch(() => {
+        setShowSettings(true)
+      })
+  }, [])
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -68,7 +81,14 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [session.messages, loading])
 
-  const saveKey = () => { localStorage.setItem('davgpt_groq_key', apiKey); setShowSettings(false) }
+  const saveKey = async () => {
+    try {
+      await SecureStoragePlugin.set({ key: 'davgpt_groq_key', value: apiKey })
+      setShowSettings(false)
+    } catch (e) {
+      console.error('Failed to save key', e)
+    }
+  }
 
   const updateMessages = (messages: Message[]) => {
     const updated: Session = {
@@ -273,6 +293,18 @@ export default function App() {
   const [tab, setTab] = useState<'chat' | 'terminal' | 'agent' | 'cortex'>('chat')
   const [showSidebar, setShowSidebar] = useState(false)
   const bridge = useTerminalBridge()
+  const [apiKey, setApiKey] = useState('')
+
+  useEffect(() => {
+    SecureStoragePlugin.get({ key: 'davgpt_groq_key' })
+      .then(res => {
+        if (res.value) {
+          setApiKey(res.value)
+        }
+      })
+      .catch(() => {})
+  }, [tab]) // Refresh when tab changes just in case Chat saved a new key
+
 
   const [environments] = useState<Environment[]>(() => loadEnvironments())
   const [mcpServers, setMcpServers] = useState<MCPServer[]>(() => loadMCPServers())
@@ -371,7 +403,7 @@ export default function App() {
           <Terminal bridge={bridge} />
         ) : tab === 'agent' ? (
           <AgentPanel
-            apiKey={localStorage.getItem('davgpt_groq_key') || ''}
+            apiKey={apiKey}
             sendCommand={bridge.sendCommand}
             connState={bridge.connState}
             onOutput={bridge.onOutput}
@@ -380,7 +412,7 @@ export default function App() {
           />
         ) : (
           <Cortex
-            apiKey={localStorage.getItem('davgpt_groq_key') || ''}
+            apiKey={apiKey}
             sendCommand={bridge.sendCommand}
             connState={bridge.connState}
           />
