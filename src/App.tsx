@@ -30,7 +30,7 @@ function parseToolCall(content: string) {
   try { return JSON.parse(match[1]) } catch { return null }
 }
 
-async function executeTool(name: string, args: any): Promise<string> {
+export async function executeTool(name: string, args: any): Promise<string> {
   switch (name) {
     case 'calculate':
       try { return `Result: ${Function(`"use strict"; return (${args.expression})`)()}` } catch { return 'Error' }
