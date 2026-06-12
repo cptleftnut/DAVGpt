@@ -63,6 +63,11 @@ export interface AgentAction {
   result: string | null
 }
 
+export interface AgentMessage {
+  role: 'system' | 'user' | 'assistant'
+  content: string
+}
+
 export function parseAgentResponse(text: string): AgentAction {
   const get = (tag: string) => {
     const m = text.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'))
@@ -81,8 +86,8 @@ export function parseAgentResponse(text: string): AgentAction {
 }
 
 // ── Build messages for agent loop ─────────────────────────
-export function buildAgentMessages(task: AgentTask): any[] {
-  const msgs: any[] = [{ role: 'system', content: AGENT_SYSTEM }]
+export function buildAgentMessages(task: AgentTask): AgentMessage[] {
+  const msgs: AgentMessage[] = [{ role: 'system', content: AGENT_SYSTEM }]
   msgs.push({ role: 'user', content: `TASK: ${task.goal}` })
 
   // Replay steps as conversation
