@@ -10,9 +10,6 @@ import Cortex from './Cortex'
 import { addBlock, getChainContext } from './soma'
 import { loadIrisProfile, routeMessage } from './iris'
 import AgentPanel from './AgentPanel'
-import Cortex from './Cortex'
-import { addBlock, getChainContext } from './soma'
-import { loadIrisProfile, routeMessage, IRIS_ROUTES } from './iris'
 import { type MCPServer, loadMCPServers, callMCPTool } from './mcp'
 import {
   type Session, type Environment, type Message,
@@ -60,7 +57,7 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
 
   const env = environments.find(e => e.id === session.environmentId) || environments[0]
   const irisProfile = loadIrisProfile()
-  const irisRoute = IRIS_ROUTES[irisProfile]
+  const irisRoute = [irisProfile]
   const isHermes = session.environmentId === 'hermes'
 
   const tts = useTTS()
