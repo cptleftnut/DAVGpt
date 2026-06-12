@@ -58,13 +58,19 @@ export async function addBlock(entry: {
 
 export async function verifyChain(): Promise<{ valid: boolean; brokenAt?: number }> {
   const chain = loadChain()
+
+  const expectedHashes = await Promise.all(
+    chain.map(block => {
+      const { hash, ...partial } = block
+      return computeHash(partial)
+    })
+  )
+
   for (let i = 0; i < chain.length; i++) {
     const block = chain[i]
     const expectedPrev = i === 0 ? GENESIS_HASH : chain[i - 1].hash
     if (block.prevHash !== expectedPrev) return { valid: false, brokenAt: i }
-    const { hash, ...partial } = block
-    const expected = await computeHash(partial)
-    if (expected !== hash) return { valid: false, brokenAt: i }
+    if (expectedHashes[i] !== block.hash) return { valid: false, brokenAt: i }
   }
   return { valid: true }
 }
