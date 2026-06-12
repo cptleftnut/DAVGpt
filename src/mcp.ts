@@ -48,7 +48,6 @@ export const BUILTIN_SERVERS: Omit<MCPServer, 'connected' | 'token' | 'tools'>[]
     description: 'Read/write local files via Termux',
     url: 'http://localhost:7682/mcp',
     authType: 'none',
-    description: 'Requires davgpt-bridge running in Termux',
   },
   {
     id: 'notion',
@@ -137,10 +136,10 @@ export async function callMCPTool(
     const data = await res.json()
     if (data.error) return `MCP Error: ${data.error.message}`
     const content = data.result?.content
-    if (Array.isArray(content)) return content.map((c: any) => c.text || JSON.stringify(c)).join('\n')
+    if (Array.isArray(content)) return content.map((c: { text?: string }) => c.text || JSON.stringify(c)).join('\n')
     return JSON.stringify(data.result)
-  } catch (e: any) {
-    return `Connection error: ${e.message}`
+  } catch (e) {
+    return `Connection error: ${e instanceof Error ? e.message : String(e)}`
   }
 }
 
