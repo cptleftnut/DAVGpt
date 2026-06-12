@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { useTerminalBridge } from './useTerminalBridge'
 import './Terminal.css'
 
@@ -9,6 +9,12 @@ export default function Terminal({ bridge }: Props) {
   const outputRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const inputValRef = useRef('')
+  const [token, setToken] = useState(() => localStorage.getItem('bridge_token') || '')
+
+  const handleConnect = () => {
+    localStorage.setItem('bridge_token', token)
+    connect(token)
+  }
 
   useEffect(() => {
     if (outputRef.current)
@@ -36,7 +42,7 @@ export default function Terminal({ bridge }: Props) {
         <span className="conn-status" style={{ color: stateColor }}>{stateLabel}</span>
         <div className="term-actions">
           {connState !== 'connected'
-            ? <button className="term-action-btn connect" onClick={connect}>Connect</button>
+            ? <button className="term-action-btn connect" onClick={handleConnect}>Connect</button>
             : <button className="term-action-btn disconnect" onClick={disconnect}>Disconnect</button>
           }
           <button className="term-action-btn" onClick={() => setOutput('')}>Clear</button>
@@ -47,7 +53,25 @@ export default function Terminal({ bridge }: Props) {
         <div className="bridge-hint">
           <p>1. Open Termux and run:</p>
           <code>node ~/davgpt-bridge.js</code>
-          <p>2. Come back and tap <strong>Connect</strong></p>
+          <p>2. Enter the token from Termux below:</p>
+          <input
+            type="text"
+            value={token}
+            onChange={e => setToken(e.target.value)}
+            placeholder="Bridge Token"
+            style={{
+              marginTop: '8px',
+              marginBottom: '8px',
+              padding: '6px 10px',
+              borderRadius: '4px',
+              border: '1px solid #475569',
+              background: '#1e293b',
+              color: '#f8fafc',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}
+          />
+          <p>3. Tap <strong>Connect</strong></p>
           <p className="hint-sub">First time setup:</p>
           <code style={{fontSize:'0.7rem'}}>curl -sL https://raw.githubusercontent.com/cptleftnut/DAVGpt/main/davgpt-bridge.js -o ~/davgpt-bridge.js</code>
         </div>

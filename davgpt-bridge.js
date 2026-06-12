@@ -9,6 +9,7 @@ const crypto = require('crypto')
 
 const PORT = 7681
 const SHELL = process.env.SHELL || '/data/data/com.termux/files/usr/bin/bash'
+const TOKEN = crypto.randomBytes(16).toString('hex')
 
 // Minimal WebSocket server (no external deps)
 const server = http.createServer((req, res) => {
@@ -74,6 +75,24 @@ function encodeFrame(msg) {
 }
 
 server.on('upgrade', (req, socket) => {
+  // Parse URL to check token
+  let clientToken = null
+  try {
+    const urlStr = req.url || ''
+    if (urlStr.includes('?')) {
+      const qs = urlStr.split('?')[1]
+      const params = new URLSearchParams(qs)
+      clientToken = params.get('token')
+    }
+  } catch (e) {}
+
+  if (clientToken !== TOKEN) {
+    console.log('[Bridge] Connection rejected: Invalid token')
+    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n')
+    socket.destroy()
+    return
+  }
+
   wsHandshake(req, socket)
   console.log('[Bridge] Client connected')
 
@@ -117,5 +136,6 @@ server.on('upgrade', (req, socket) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`[DAVGpt Bridge] Running on ws://localhost:${PORT}`)
-  console.log(`[DAVGpt Bridge] Open DAVGpt → Terminal tab to connect`)
+  console.log(`[DAVGpt Bridge] 🔑 Bridge Token: ${TOKEN}`)
+  console.log(`[DAVGpt Bridge] Enter this token in the DAVGpt Terminal tab to connect`)
 })

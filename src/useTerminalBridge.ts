@@ -15,11 +15,11 @@ export function useTerminalBridge() {
     listenersRef.current.forEach(fn => fn(text))
   }
 
-  const connect = useCallback(() => {
+  const connect = useCallback((token: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
     setConnState('connecting')
     append('\r\n🔌 Connecting to Termux bridge...\r\n')
-    const ws = new WebSocket(WS_URL)
+    const ws = new WebSocket(`${WS_URL}/?token=${encodeURIComponent(token)}`)
     wsRef.current = ws
     ws.onopen = () => { setConnState('connected'); append('✅ Connected!\r\n') }
     ws.onmessage = (e) => {
