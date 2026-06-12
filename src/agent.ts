@@ -81,8 +81,13 @@ export function parseAgentResponse(text: string): AgentAction {
 }
 
 // ── Build messages for agent loop ─────────────────────────
-export function buildAgentMessages(task: AgentTask): any[] {
-  const msgs: any[] = [{ role: 'system', content: AGENT_SYSTEM }]
+export interface AgentMessage {
+  role: 'system' | 'user' | 'assistant'
+  content: string
+}
+
+export function buildAgentMessages(task: AgentTask): AgentMessage[] {
+  const msgs: AgentMessage[] = [{ role: 'system', content: AGENT_SYSTEM }]
   msgs.push({ role: 'user', content: `TASK: ${task.goal}` })
 
   // Replay steps as conversation

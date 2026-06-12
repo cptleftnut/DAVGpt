@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { AgentTask, AgentStep, AgentStatus } from './agent'
-import { parseAgentResponse, buildAgentMessages, AGENT_SYSTEM } from './agent'
+import { parseAgentResponse, buildAgentMessages, AGENT_SYSTEM, AgentMessage } from './agent'
 import type { MCPServer } from './mcp'
 import './AgentPanel.css'
 
@@ -97,7 +97,7 @@ export default function AgentPanel({ apiKey, sendCommand, connState, onOutput, m
     return runCommand(cmd)
   }
 
-  const callLLM = async (messages: any[]): Promise<string> => {
+  const callLLM = async (messages: AgentMessage[]): Promise<string> => {
     const res = await fetch(GROQ_BASE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
