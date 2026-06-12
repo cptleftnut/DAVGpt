@@ -1,3 +1,4 @@
+import { evaluate } from "mathjs"
 import { useState, useRef, useEffect } from 'react'
 import Terminal from './Terminal'
 import SkillsPanel, { Skill } from './Skills'
@@ -6,9 +7,6 @@ import Sidebar from './Sidebar'
 import { useTerminalBridge } from './useTerminalBridge'
 import { useTTS, useSTT } from './useSpeech'
 import MCPPanel from './MCPPanel'
-import Cortex from './Cortex'
-import { addBlock, getChainContext } from './soma'
-import { loadIrisProfile, routeMessage } from './iris'
 import AgentPanel from './AgentPanel'
 import Cortex from './Cortex'
 import { addBlock, getChainContext } from './soma'
@@ -33,7 +31,7 @@ function parseToolCall(content: string) {
 async function executeTool(name: string, args: any): Promise<string> {
   switch (name) {
     case 'calculate':
-      try { return `Result: ${Function(`"use strict"; return (${args.expression})`)()}` } catch { return 'Error' }
+      try { return `Result: ${evaluate(args.expression)}` } catch { return 'Error' }
     case 'get_time': return `Current time: ${new Date().toLocaleString()}`
     default: return `[Tool "${name}" unavailable]`
   }
