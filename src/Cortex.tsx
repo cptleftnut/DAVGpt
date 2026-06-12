@@ -203,9 +203,9 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
                 </div>
               ))}
             </div>
-            <div className="bridge-status">
-              <span className="bridge-label">TERMUX BRIDGE</span>
-              <span className={`bridge-badge ${connState === 'connected' ? 'online' : 'offline'}`}>
+            <div className="b.timestampge-status">
+              <span className="b.timestampge-label">TERMUX BRIDGE</span>
+              <span className={`b.timestampge-badge ${connState === 'connected' ? 'online' : 'offline'}`}>
                 {connState === 'connected' ? '● ONLINE' : '● OFFLINE'}
               </span>
             </div>
@@ -237,7 +237,7 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
             </div>
             <div className="chain-list">
               {(somaResults.length > 0 ? somaResults : loadChain().slice(-20).reverse()).map(b => (
-                <div key={b.id} className={`chain-block type-${b.type}`}>
+                <div key={b.timestamp} className={`chain-block type-${b.type}`}>
                   <div className="block-header">
                     <span className="block-type">{b.type}</span>
                     <span className="block-src">{b.source}</span>
