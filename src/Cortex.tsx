@@ -14,7 +14,7 @@ import './Cortex.css'
 
 const GROQ_BASE = 'https://api.groq.com/openai/v1/chat/completions'
 
-type CortexTab = 'dashboard' | 'soma' | 'iris' | 'ground' | 'daemon' | 'self'
+type CortexTab = 'dashboard' | 'soma' | 'iris' | 'ground' | 'daemon' | 'davos'
 
 interface Props {
   apiKey: string
@@ -34,8 +34,9 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
   const [somaResults, setSomaResults] = useState<SomaBlock[]>([])
   const [newMemory, setNewMemory] = useState('')
   const [newTask, setNewTask] = useState({ name: '', command: '', schedule: 'every60s' as GroundTask['schedule'] })
-  const [selfProposal, setSelfProposal] = useState('')
-  const [selfGenerating, setSelfGenerating] = useState(false)
+  const [davosInput, setDavosInput] = useState('')
+  const [davosChat, setDavosChat] = useState<{role: 'user'|'assistant', text: string}[]>([])
+  const [davosLoading, setDavosLoading] = useState(false)
   const [lastDaemon, setLastDaemon] = useState(getLastDaemonRun())
 
   const refresh = () => {
@@ -52,12 +53,10 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
     const tick = async () => {
       const due = getDueGroundTasks()
       for (const task of due) {
-        if (sendCommand && connState === 'connected') {
-          sendCommand(task.command)
-          markGroundTaskDone(task.id, '[sent to terminal]')
-          await addBlock({ type: 'context', content: `GROUND ran: ${task.name}`, source: 'system' })
-          refresh()
-        }
+        // CORTEX executes independently without Termux sendCommand
+        markGroundTaskDone(task.id, '[executed internally]')
+        await addBlock({ type: 'context', content: `GROUND ran: ${task.name}`, source: 'system' })
+        refresh()
       }
 
       // DAEMON tick
@@ -134,9 +133,13 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
     setGroundTasks(updated)
   }
 
-  const generateSelfProposal = async () => {
-    if (!apiKey || selfGenerating) return
-    setSelfGenerating(true)
+  const sendDavosMessage = async () => {
+    if (!apiKey || !davosInput.trim() || davosLoading) return
+    const userMsg = davosInput.trim()
+    setDavosInput('')
+    setDavosChat(prev => [...prev, {role: 'user', text: userMsg}])
+    setDavosLoading(true)
+
     try {
       const res = await fetch(GROQ_BASE, {
         method: 'POST',
@@ -144,15 +147,22 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
           max_tokens: 512,
-          messages: [{
-            role: 'user',
-            content: `You are DAVSI self-modification system. Propose an improvement to the DAVGpt app as a unified diff or code change. Be specific and implementable. Focus on one concrete improvement.`,
-          }],
+          messages: [
+            { role: 'system', content: 'You are DAVOs CORTEX, the intelligent core of BMO. Reply directly, naturally, and functionally.' },
+            ...davosChat.map(m => ({ role: m.role, content: m.text })),
+            { role: 'user', content: userMsg }
+          ],
         }),
       })
       const data = await res.json()
-      setSelfProposal(data.choices?.[0]?.message?.content || '')
-    } finally { setSelfGenerating(false) }
+      const reply = data.choices?.[0]?.message?.content || 'Error getting response'
+      setDavosChat(prev => [...prev, {role: 'assistant', text: reply}])
+      // Log interaction into memory chain
+      addBlock({ type: 'context', content: `DAVOs Chat: ${userMsg} -> ${reply.slice(0,100)}...`, source: 'user' })
+    } catch (e: any) {
+      setDavosChat(prev => [...prev, {role: 'assistant', text: `Error: ${e.message}`}])
+    }
+    setDavosLoading(false)
   }
 
   const timeAgo = (ts: number) => {
@@ -174,9 +184,9 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
     <div className="cortex">
       {/* Top nav */}
       <div className="cortex-nav">
-        {(['dashboard','soma','iris','ground','daemon','self'] as CortexTab[]).map(t => (
+        {(['dashboard','soma','iris','ground','daemon','davos'] as CortexTab[]).map(t => (
           <button key={t} className={`cortex-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
-            {{'dashboard':'◈','soma':'⛓','iris':'👁','ground':'⏱','daemon':'🌀','self':'⚙'}[t]}
+            {{'dashboard':'◈','soma':'⛓','iris':'👁','ground':'⏱','daemon':'🌀','davos':'💬'}[t]}
             <span>{t.toUpperCase()}</span>
           </button>
         ))}
@@ -345,23 +355,33 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
           </div>
         )}
 
-        {/* ── SELF ── */}
-        {tab === 'self' && (
-          <div className="tab-content-inner">
-            <div className="section-title">⚙ SELF — Code Modification</div>
-            <p className="cx-desc">Generate improvement proposals for DAVGpt. Review, copy, and apply manually.</p>
-            <button className="cx-btn purple full" onClick={generateSelfProposal} disabled={selfGenerating || !apiKey}>
-              {selfGenerating ? '🔄 Generating...' : '⚡ Generate Proposal'}
-            </button>
-            {selfProposal && (
-              <div className="self-proposal">
-                <div className="proposal-header">
-                  <span>Proposal</span>
-                  <button className="cx-btn small" onClick={() => navigator.clipboard.writeText(selfProposal)}>Copy</button>
+        {/* ── DAVOS ── */}
+        {tab === 'davos' && (
+          <div className="tab-content-inner" style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+            <div className="section-title">💬 DAVOs CORTEX</div>
+            <p className="cx-desc">Direct text interface to the DAVOs core. Responses are visual and logged to SOMA.</p>
+
+            <div className="davos-chat-log" style={{flexGrow: 1, overflowY: 'auto', background: '#1e293b', borderRadius: '8px', padding: '12px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px'}}>
+              {davosChat.length === 0 && <div style={{color: '#64748b', textAlign: 'center', marginTop: '20px'}}>No messages yet. Say hello!</div>}
+              {davosChat.map((msg, i) => (
+                <div key={i} style={{alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', background: msg.role === 'user' ? '#3b82f6' : '#334155', color: '#f8fafc', padding: '8px 12px', borderRadius: '8px', maxWidth: '85%', wordBreak: 'break-word'}}>
+                  {msg.text}
                 </div>
-                <pre className="proposal-code">{selfProposal}</pre>
-              </div>
-            )}
+              ))}
+              {davosLoading && <div style={{color: '#94a3b8', fontSize: '0.9em', alignSelf: 'flex-start'}}>DAVOs is typing...</div>}
+            </div>
+
+            <div className="davos-input-row" style={{display: 'flex', gap: '8px'}}>
+              <input
+                type="text"
+                value={davosInput}
+                onChange={e => setDavosInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && sendDavosMessage()}
+                placeholder="Message DAVOs..."
+                style={{flexGrow: 1, background: '#0f172a', border: '1px solid #334155', color: 'white', padding: '10px', borderRadius: '6px'}}
+              />
+              <button className="cx-btn green" onClick={sendDavosMessage} disabled={davosLoading || !davosInput.trim()}>Send</button>
+            </div>
           </div>
         )}
       </div>
