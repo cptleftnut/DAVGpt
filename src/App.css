@@ -569,3 +569,117 @@
   align-items: center;
   justify-content: center;
 }
+
+/* --- BMO / Tamagotchi Theme --- */
+
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+.bmo-container {
+  background-color: #58c7b4; /* BMO teal */
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: inset -4px -4px 0px rgba(0,0,0,0.1), 4px 4px 10px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 4px solid #11332a;
+}
+
+.bmo-screen {
+  background-color: #e0f2e9; /* Pale screen green */
+  border: 8px solid #11332a;
+  border-radius: 12px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: inset 4px 4px 0px rgba(0,0,0,0.05);
+  font-family: 'VT323', monospace;
+  color: #11332a;
+}
+
+.bmo-face {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 4rem;
+  text-align: center;
+  padding: 20px 0;
+  color: #11332a;
+  text-shadow: 2px 2px 0px #c5e5d4;
+  transition: all 0.3s ease;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bmo-face.happy { color: #11332a; }
+.bmo-face.thinking { color: #2b6cb0; animation: pulse 1s infinite; }
+.bmo-face.executing { color: #d69e2e; }
+.bmo-face.error { color: #e53e3e; animation: shake 0.5s; }
+
+.bmo-controls {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+  padding: 10px;
+}
+
+.bmo-btn {
+  border-radius: 50%;
+  border: 4px solid #11332a;
+  box-shadow: 0 4px 0px #11332a;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.bmo-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 0px 0px #11332a;
+}
+
+.bmo-btn-yellow { background-color: #ecc94b; width: 40px; height: 40px; }
+.bmo-btn-red { background-color: #f56565; width: 50px; height: 50px; }
+.bmo-btn-blue { background-color: #4299e1; width: 40px; height: 40px; }
+
+.bmo-dpad {
+  display: grid;
+  grid-template-columns: 20px 20px 20px;
+  grid-template-rows: 20px 20px 20px;
+  gap: 0;
+}
+
+.dpad-btn {
+  background-color: #ecc94b;
+  border: 2px solid #11332a;
+}
+
+.bmo-input-area {
+  background: #11332a;
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+}
+
+.bmo-input {
+  flex-grow: 1;
+  background: transparent;
+  color: #e0f2e9;
+  border: none;
+  font-family: 'VT323', monospace;
+  font-size: 1.2rem;
+  outline: none;
+}
+
+.bmo-input::placeholder {
+  color: #c5e5d4;
+  opacity: 0.5;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}

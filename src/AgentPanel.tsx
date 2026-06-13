@@ -226,7 +226,7 @@ export default function AgentPanel({ apiKey, sendCommand, connState, onOutput, m
   }[type] || '#94a3b8')
 
   return (
-    <div className="agent-panel">
+    <div className="agent-panel bmo-container">
       <div className="agent-header">
         <div className="agent-title-row">
           <span className="agent-logo">⚡ KIRA</span>
@@ -241,7 +241,16 @@ export default function AgentPanel({ apiKey, sendCommand, connState, onOutput, m
       </div>
 
       {/* Task log */}
-      <div className="agent-log" ref={logsRef}>
+
+      <div className="bmo-screen">
+        <div className={`bmo-face ${status}`}>
+          {status === 'idle' || status === 'done' ? '(^‿^)' : ''}
+          {status === 'thinking' ? '(o_O)' : ''}
+          {status === 'executing' ? '(>_<)' : ''}
+          {status === 'error' ? '(T_T)' : ''}
+        </div>
+        <div className="agent-log" ref={logsRef} style={{ border: 'none', background: 'transparent' }}>
+
         {!task && (
           <div className="agent-empty">
             <div className="agent-empty-icon">⚡</div>
@@ -295,14 +304,21 @@ export default function AgentPanel({ apiKey, sendCommand, connState, onOutput, m
         )}
       </div>
 
+      </div>
       {/* Input */}
-      <div className="agent-input-area">
+      <div className="bmo-input-area">
         {(status === 'thinking' || status === 'executing') ? (
           <button className="agent-abort" onClick={abort}>⏹ Stop KIRA</button>
         ) : (
-          <div className="agent-input-row">
+
+  <>
+  <div className="bmo-controls" style={{ marginTop: '0', padding: '0', gap: '10px' }}>
+    <button className="bmo-btn bmo-btn-red agent-start" onClick={start} disabled={!goalInput.trim() || !apiKey || connState !== 'connected'} title="Start">
+    </button>
+  </div>
+  <div className="agent-input-row" style={{ flexGrow: 1 }}>
             <textarea
-              className="agent-input"
+              className="bmo-input"
               placeholder={connState === 'connected' ? 'Describe a task for KIRA...' : 'Connect Terminal first...'}
               value={goalInput}
               onChange={e => setGoalInput(e.target.value)}
@@ -310,10 +326,11 @@ export default function AgentPanel({ apiKey, sendCommand, connState, onOutput, m
               rows={2}
               disabled={connState !== 'connected'}
             />
-            <button className="agent-start" onClick={start} disabled={!goalInput.trim() || !apiKey || connState !== 'connected'}>
+            <button className="agent-start" style={{display: "none"}} onClick={start} disabled={!goalInput.trim() || !apiKey || connState !== 'connected'}>
               ⚡
             </button>
           </div>
+          </>
         )}
       </div>
     </div>
