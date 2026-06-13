@@ -226,112 +226,99 @@ export default function AgentPanel({ apiKey, sendCommand, connState, onOutput, m
   }[type] || '#94a3b8')
 
   return (
-    <div className="agent-panel bmo-container">
-      <div className="agent-header">
-        <div className="agent-title-row">
-          <span className="agent-logo">⚡ KIRA</span>
-          <span className="agent-subtitle">Autonomous Coding Agent</span>
-        </div>
-        <div className="agent-status-row">
-          <span className={`agent-status-badge ${status}`}>{status}</span>
-          <span className={`agent-conn ${connState === 'connected' ? 'ok' : 'off'}`}>
-            {connState === 'connected' ? '🟢 Terminal' : '🔴 No Terminal'}
-          </span>
-        </div>
-      </div>
-
-      {/* Task log */}
-
-      <div className="bmo-screen">
-        <div className={`bmo-face ${status}`}>
-          {status === 'idle' || status === 'done' ? '(^‿^)' : ''}
-          {status === 'thinking' ? '(o_O)' : ''}
-          {status === 'executing' ? '(>_<)' : ''}
-          {status === 'error' ? '(T_T)' : ''}
-        </div>
-        <div className="agent-log" ref={logsRef} style={{ border: 'none', background: 'transparent' }}>
-
-        {!task && (
-          <div className="agent-empty">
-            <div className="agent-empty-icon">⚡</div>
-            <p>KIRA is ready</p>
-            <p className="agent-empty-sub">Describe a coding task and I'll handle it autonomously — writing code, running commands, fixing errors.</p>
-            <div className="agent-examples">
-              {[
-                'Create a Python web scraper for hacker news',
-                'Set up a Node.js Express API with SQLite',
-                'Write and test a bash script to backup my files',
-                'Install and configure neovim with plugins',
-              ].map(ex => (
-                <button key={ex} className="agent-example" onClick={() => setGoalInput(ex)}>
-                  {ex}
-                </button>
-              ))}
-            </div>
+    <div className="agent-panel bmo-body">
+      {/* BMO Bezel and Screen */}
+      <div className="bmo-bezel">
+        <div className="bmo-screen">
+          <div className={`bmo-face ${status}`}>
+            {status === 'idle' || status === 'done' ? '(^‿^)' : ''}
+            {status === 'thinking' ? '(o_O)' : ''}
+            {status === 'executing' ? '(>_<)' : ''}
+            {status === 'error' ? '(T_T)' : ''}
           </div>
-        )}
 
-        {task && (
-          <div className="agent-task">
-            <div className="agent-goal">🎯 {task.goal}</div>
-            {task.steps.map(step => (
-              <div key={step.id} className={`agent-step step-${step.type}`}>
-                <span className="step-icon" style={{ color: stepColor(step.type) }}>{stepIcon(step.type)}</span>
-                <div className="step-content">
-                  {step.type === 'command' ? (
-                    <code className="step-command">{step.content}</code>
-                  ) : step.type === 'output' || step.type === 'error' ? (
-                    <pre className="step-output">{step.content.slice(0, 600)}{step.content.length > 600 ? '…' : ''}</pre>
-                  ) : (
-                    <p className="step-text">{step.content}</p>
-                  )}
+          <div className="agent-log" ref={logsRef} style={{ border: 'none', background: 'transparent', flexGrow: 1, padding: '10px' }}>
+            {!task && (
+              <div className="agent-empty">
+                <p>BMO IS READY!</p>
+                <div className="agent-examples">
+                  {[
+                    'Create a Python web scraper',
+                    'Set up a Node.js Express API',
+                  ].map(ex => (
+                    <button key={ex} className="agent-example" onClick={() => setGoalInput(ex)}>
+                      {ex}
+                    </button>
+                  ))}
                 </div>
               </div>
-            ))}
-            {status === 'thinking' && (
-              <div className="agent-thinking">
-                <span className="think-dot" /><span className="think-dot" /><span className="think-dot" />
-                <span>KIRA is thinking...</span>
-              </div>
             )}
-            {status === 'executing' && (
-              <div className="agent-thinking executing">
-                <span className="think-dot" /><span className="think-dot" /><span className="think-dot" />
-                <span>Executing command...</span>
+
+            {task && (
+              <div className="agent-task">
+                <div className="agent-goal">🎯 {task.goal}</div>
+                {task.steps.map(step => (
+                  <div key={step.id} className={`agent-step step-${step.type}`}>
+                    <span className="step-icon" style={{ color: stepColor(step.type) }}>{stepIcon(step.type)}</span>
+                    <div className="step-content">
+                      {step.type === 'command' ? (
+                        <code className="step-command">{step.content}</code>
+                      ) : step.type === 'output' || step.type === 'error' ? (
+                        <pre className="step-output">{step.content.slice(0, 300)}{step.content.length > 300 ? '…' : ''}</pre>
+                      ) : (
+                        <p className="step-text">{step.content}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {status === 'thinking' && <div className="agent-thinking">BMO is thinking...</div>}
+                {status === 'executing' && <div className="agent-thinking executing">BMO is working...</div>}
               </div>
             )}
           </div>
-        )}
-      </div>
 
-      </div>
-      {/* Input */}
-      <div className="bmo-input-area">
-        {(status === 'thinking' || status === 'executing') ? (
-          <button className="agent-abort" onClick={abort}>⏹ Stop KIRA</button>
-        ) : (
-
-  <>
-  <div className="bmo-controls" style={{ marginTop: '0', padding: '0', gap: '10px' }}>
-    <button className="bmo-btn bmo-btn-red agent-start" onClick={start} disabled={!goalInput.trim() || !apiKey || connState !== 'connected'} title="Start">
-    </button>
-  </div>
-  <div className="agent-input-row" style={{ flexGrow: 1 }}>
-            <textarea
-              className="bmo-input"
-              placeholder={connState === 'connected' ? 'Describe a task for KIRA...' : 'Connect Terminal first...'}
-              value={goalInput}
-              onChange={e => setGoalInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); start() } }}
-              rows={2}
-              disabled={connState !== 'connected'}
-            />
-            <button className="agent-start" style={{display: "none"}} onClick={start} disabled={!goalInput.trim() || !apiKey || connState !== 'connected'}>
-              ⚡
-            </button>
+          {/* Input Area embedded inside the screen */}
+          <div className="bmo-input-area">
+            {(status === 'thinking' || status === 'executing') ? (
+              <button className="agent-abort" onClick={abort} style={{width: '100%', background: 'transparent', color: '#f56565', border: 'none', fontFamily: 'VT323', fontSize: '1.2rem', cursor: 'pointer'}}>⏹ Stop BMO</button>
+            ) : (
+              <textarea
+                className="bmo-input"
+                placeholder={connState === 'connected' ? 'Tell BMO to do something...' : 'Connect Terminal first...'}
+                value={goalInput}
+                onChange={e => setGoalInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); start() } }}
+                rows={1}
+                disabled={connState !== 'connected'}
+              />
+            )}
           </div>
-          </>
-        )}
+        </div>
+      </div>
+
+      {/* BMO Physical Hardware Panel */}
+      <div className="bmo-hardware-panel">
+        <div className="bmo-cartridge-slot"></div>
+
+        <div className="bmo-dpad-container">
+          <div className="bmo-dpad-cross">
+            <div className="bmo-dpad-v"></div>
+            <div className="bmo-dpad-h"></div>
+            <div className="bmo-dpad-center"></div>
+          </div>
+        </div>
+
+        <div className="bmo-action-buttons">
+          <div className="bmo-button-group-top">
+            <div className="bmo-triangle-wrapper"><div className="bmo-btn-triangle"></div></div>
+            <button className="bmo-hard-btn bmo-btn-green" onClick={() => setGoalInput('')} title="Clear"></button>
+          </div>
+          <button className="bmo-hard-btn bmo-btn-red" onClick={start} disabled={!goalInput.trim() || !apiKey || connState !== 'connected'} title="Start Agent"></button>
+        </div>
+
+        <div className="bmo-speakers">
+          {[...Array(7)].map((_, i) => <div key={i} className="bmo-speaker-hole"></div>)}
+        </div>
       </div>
     </div>
   )
