@@ -6,9 +6,9 @@ import Sidebar from './Sidebar'
 import { useTerminalBridge } from './useTerminalBridge'
 import { useTTS, useSTT } from './useSpeech'
 import MCPPanel from './MCPPanel'
-import Cortex from './Cortex'
-import { addBlock, getChainContext } from './soma'
-import { loadIrisProfile, routeMessage } from './iris'
+
+
+
 import AgentPanel from './AgentPanel'
 import Cortex from './Cortex'
 import { addBlock, getChainContext } from './soma'
@@ -400,10 +400,6 @@ export default function App() {
         <button className={`tab-btn ${tab === 'agent' ? 'active' : ''}`} onClick={() => setTab('agent')}>
           <span className="tab-icon">⚡</span>
           <span className="tab-label">KIRA</span>
-        </button>
-        <button className={`tab-btn ${tab === 'cortex' ? 'active' : ''}`} onClick={() => setTab('cortex')}>
-          <span className="tab-icon">◈</span>
-          <span className="tab-label">CORTEX</span>
         </button>
         <button className={`tab-btn ${tab === 'cortex' ? 'active' : ''}`} onClick={() => setTab('cortex')}>
           <span className="tab-icon">◈</span>

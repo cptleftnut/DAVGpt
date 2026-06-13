@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 .app {
   display: flex;
   flex-direction: column;
@@ -572,8 +575,6 @@
 
 /* --- BMO / Tamagotchi Theme --- */
 
-@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 .bmo-container {
   background-color: #58c7b4; /* BMO teal */

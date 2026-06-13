@@ -18,6 +18,13 @@ export function useTTS() {
       .replace(/\n+/g, ' ')
       .trim()
     const utter = new SpeechSynthesisUtterance(clean)
+    utter.lang = 'da-DK'
+
+    // Try to find a Danish voice
+    const voices = window.speechSynthesis.getVoices()
+    const daVoice = voices.find(v => v.lang === 'da-DK' || v.lang === 'da_DK' || v.lang.startsWith('da'))
+    if (daVoice) utter.voice = daVoice
+
     utter.rate = 1.05
     utter.pitch = 1
     utter.volume = 1
@@ -60,7 +67,7 @@ export function useSTT(onResult: (text: string) => void) {
     if (!SpeechRecognition) { setError('Speech recognition not supported'); return }
     setError(null)
     const recog = new SpeechRecognition()
-    recog.lang = navigator.language || 'en-US'
+    recog.lang = 'da-DK'
     recog.continuous = false
     recog.interimResults = false
     recog.maxAlternatives = 1
