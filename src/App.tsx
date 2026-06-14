@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import Terminal from './Terminal'
 import SkillsPanel, { Skill } from './Skills'
 import MessageBubble from './MessageBubble'
@@ -107,11 +107,11 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
     return data.choices?.[0]?.message?.content ?? data.error?.message ?? 'No response'
   }
 
-  const handleRunCommand = (cmd: string): boolean => {
+  const handleRunCommand = useCallback((cmd: string): boolean => {
     const ok = bridge.sendCommand(cmd)
     if (ok) switchToTerminal()
     return ok
-  }
+  }, [bridge.sendCommand, switchToTerminal])
 
   const send = async () => {
     const text = input.trim()
