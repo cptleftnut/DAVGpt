@@ -12,7 +12,7 @@ import {
 import { getChainContext } from './soma'
 import './Cortex.css'
 
-const GROQ_BASE = 'https://api.groq.com/openai/v1/chat/completions'
+import { unifiedCallLLM, LLMMessage } from './llm'
 
 type CortexTab = 'dashboard' | 'soma' | 'iris' | 'ground' | 'daemon' | 'davos'
 
@@ -73,23 +73,13 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
     setDaemonRunning(true)
     try {
       const ctx = getChainContext(6)
-      const res = await fetch(GROQ_BASE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          max_tokens: 256,
-          temperature: 0.8,
-          messages: [
+      const messages = [
             { role: 'system', content: DAEMON_PROMPT(ctx) },
             { role: 'user', content: 'Generate your inner monologue now.' },
-          ],
-        }),
-      })
-      const data = await res.json()
-      const content = data.choices?.[0]?.message?.content || 'No monologue generated.'
-      addDaemonMonologue(content, trigger)
-      await addBlock({ type: 'monologue', content, source: 'daemon', tags: ['daemon'] })
+          ]
+      const thought = await unifiedCallLLM(apiKey, 'llama-3.3-70b-versatile', messages as LLMMessage[], { max_tokens: 256, temperature: 0.8 })
+      addDaemonMonologue(thought, trigger)
+      await addBlock({ type: 'monologue', content: thought, source: 'daemon', tags: ['daemon'] })
       refresh()
     } catch (e: any) {
       addDaemonMonologue(`[Error: ${e.message}]`, trigger)
@@ -141,21 +131,12 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
     setDavosLoading(true)
 
     try {
-      const res = await fetch(GROQ_BASE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          max_tokens: 512,
-          messages: [
-            { role: 'system', content: 'You are DAVOs CORTEX, the intelligent core of BMO. Reply directly, naturally, and functionally.' },
-            ...davosChat.map(m => ({ role: m.role, content: m.text })),
-            { role: 'user', content: userMsg }
-          ],
-        }),
-      })
-      const data = await res.json()
-      const reply = data.choices?.[0]?.message?.content || 'Error getting response'
+      const messages = [
+        { role: 'system', content: 'You are DAVOs CORTEX, the intelligent core of BMO. Reply directly, naturally, and functionally.' },
+        ...davosChat.map(m => ({ role: m.role, content: m.text })),
+        { role: 'user', content: userMsg }
+      ]
+      const reply = await unifiedCallLLM(apiKey, 'llama-3.3-70b-versatile', messages as LLMMessage[], { max_tokens: 512 })
       setDavosChat(prev => [...prev, {role: 'assistant', text: reply}])
       // Log interaction into memory chain
       addBlock({ type: 'context', content: `DAVOs Chat: ${userMsg} -> ${reply.slice(0,100)}...`, source: 'user' })

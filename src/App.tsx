@@ -22,7 +22,7 @@ import {
 } from './sessions'
 import './App.css'
 
-const GROQ_BASE = 'https://api.groq.com/openai/v1/chat/completions'
+import { unifiedCallLLM, LLMMessage } from './llm'
 
 function parseToolCall(content: string) {
   const match = content.match(/<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/)
@@ -101,13 +101,7 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
   const callGroq = async (msgs: Message[]) => {
     const irisProfile = loadIrisProfile()
     const routed = routeMessage(irisProfile, (environments.find(e => e.id === session.environmentId) || environments[0]).systemPrompt)
-    const res = await fetch(GROQ_BASE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: session.model, max_tokens: routed.maxTokens, temperature: routed.temperature, messages: buildApiMessages(msgs) }),
-    })
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content ?? data.error?.message ?? 'No response'
+    return unifiedCallLLM(apiKey, session.model, buildApiMessages(msgs) as LLMMessage[], { max_tokens: routed.maxTokens, temperature: routed.temperature })
   }
 
   const handleRunCommand = (cmd: string): boolean => {
@@ -207,10 +201,10 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
         <div className="modal-overlay" onClick={() => apiKey && setShowSettings(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h2>Settings</h2>
-            <label>Groq API Key</label>
+            <label>API Key (Groq or Gemini)</label>
             <input type="password" className="key-input" placeholder="gsk_..." value={apiKey}
               onChange={e => setApiKey(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveKey()} autoFocus />
-            <p className="hint">Get your free key at console.groq.com — stored locally only.</p>
+            <p className="hint">Get a key at console.groq.com or aistudio.google.com — stored locally only.</p>
             <div className="setting-row">
               <label>Auto-speak responses</label>
               <button className={`toggle-btn ${tts.autoSpeak ? 'on' : ''}`} onClick={tts.toggleAutoSpeak}>{tts.autoSpeak ? 'ON' : 'OFF'}</button>
@@ -260,7 +254,7 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
             </button>
           )}
           <textarea ref={textareaRef} className="input" rows={1}
-            placeholder={apiKey ? (activeSkill ? activeSkill.placeholder : 'Message DAVGpt...') : 'Add Groq API key in ⚙️'}
+            placeholder={apiKey ? (activeSkill ? activeSkill.placeholder : 'Message DAVGpt...') : 'Add Groq/Gemini API key in ⚙️'}
             value={input} onChange={autoResize} onKeyDown={onKeyDown} disabled={!apiKey || loading} />
           <button className="send-btn" onClick={send} disabled={!input.trim() || loading || !apiKey}>↑</button>
         </div>

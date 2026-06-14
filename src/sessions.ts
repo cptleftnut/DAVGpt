@@ -29,6 +29,13 @@ export interface Session {
 // ── Built-in environments ──────────────────────────────────
 export const DEFAULT_ENVIRONMENTS: Environment[] = [
   {
+    id: 'gemini',
+    name: 'Gemini Pro',
+    icon: '✨',
+    model: 'gemini-1.5-pro-latest',
+    systemPrompt: 'You are a highly capable AI assistant powered by Google Gemini. Be concise, clear, and helpful.',
+  },
+  {
     id: 'default',
     name: 'General',
     icon: '💬',

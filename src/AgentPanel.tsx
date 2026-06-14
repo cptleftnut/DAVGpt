@@ -1,10 +1,11 @@
+import { unifiedCallLLM, LLMMessage } from './llm'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { AgentTask, AgentStep, AgentStatus } from './agent'
 import { parseAgentResponse, buildAgentMessages, AGENT_SYSTEM } from './agent'
 import type { MCPServer } from './mcp'
 import './AgentPanel.css'
 
-const GROQ_BASE = 'https://api.groq.com/openai/v1/chat/completions'
+
 const AGENT_MODEL = 'llama-3.3-70b-versatile'
 const MAX_STEPS = 30
 
@@ -98,13 +99,7 @@ export default function AgentPanel({ apiKey, sendCommand, connState, onOutput, m
   }
 
   const callLLM = async (messages: any[]): Promise<string> => {
-    const res = await fetch(GROQ_BASE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: AGENT_MODEL, messages, max_tokens: 2048, temperature: 0.2 }),
-    })
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content ?? data.error?.message ?? ''
+    return unifiedCallLLM(apiKey, AGENT_MODEL, messages as LLMMessage[], { max_tokens: 2048, temperature: 0.2 })
   }
 
   const runAgentLoop = async (goal: string) => {
