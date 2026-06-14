@@ -8,11 +8,8 @@ import { useTTS, useSTT } from './useSpeech'
 import MCPPanel from './MCPPanel'
 import Cortex from './Cortex'
 import { addBlock, getChainContext } from './soma'
-import { loadIrisProfile, routeMessage } from './iris'
-import AgentPanel from './AgentPanel'
-import Cortex from './Cortex'
-import { addBlock, getChainContext } from './soma'
 import { loadIrisProfile, routeMessage, IRIS_ROUTES } from './iris'
+import AgentPanel from './AgentPanel'
 import { type MCPServer, loadMCPServers, callMCPTool } from './mcp'
 import {
   type Session, type Environment, type Message,
@@ -30,10 +27,10 @@ function parseToolCall(content: string) {
   try { return JSON.parse(match[1]) } catch { return null }
 }
 
-async function executeTool(name: string, args: any): Promise<string> {
+async function executeTool(name: string, args: Record<string, unknown>): Promise<string> {
   switch (name) {
     case 'calculate':
-      try { return `Result: ${Function(`"use strict"; return (${args.expression})`)()}` } catch { return 'Error' }
+      try { return `Result: ${Function(`"use strict"; return (${String(args.expression)})`)()}` } catch { return 'Error' }
     case 'get_time': return `Current time: ${new Date().toLocaleString()}`
     default: return `[Tool "${name}" unavailable]`
   }
