@@ -12,7 +12,7 @@ export interface Message {
   id: number
   role: 'user' | 'assistant' | 'system'
   content: string
-  toolCall?: { name: string; args: any }
+  toolCall?: { name: string; args: Record<string, unknown> }
   toolResult?: string
 }
 
