@@ -375,7 +375,7 @@ export default function App() {
             connState={bridge.connState}
             onOutput={bridge.onOutput}
             mcpServers={mcpServers}
-            switchToTerminal={handleSwitchToTerminal}
+            switchToTerminal={() => setTab('terminal')}
           />
         ) : (
           <Cortex

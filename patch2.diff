@@ -1,0 +1,40 @@
+--- src/App.tsx
++++ src/App.tsx
+@@ -1,4 +1,4 @@
+-import { useState, useRef, useEffect } from 'react'
++import { useState, useRef, useEffect, useCallback } from 'react'
+ import Terminal from './Terminal'
+ import SkillsPanel, { Skill } from './Skills'
+ import MessageBubble from './MessageBubble'
+@@ -83,11 +83,11 @@
+     return data.choices?.[0]?.message?.content ?? data.error?.message ?? 'No response'
+   }
+
+-  const handleRunCommand = (cmd: string): boolean => {
++  const handleRunCommand = useCallback((cmd: string): boolean => {
+     const ok = bridge.sendCommand(cmd)
+     if (ok) switchToTerminal()
+     return ok
+-  }
++  }, [bridge, switchToTerminal])
+
+   const send = async () => {
+     const text = input.trim()
+@@ -321,6 +321,8 @@
+     }
+   }
+
++  const handleSwitchToTerminal = useCallback(() => setTab('terminal'), [])
++
+   return (
+     <div className="app">
+       {showMCP && (
+@@ -348,7 +350,7 @@
+               onUpdateSession={handleUpdateSession}
+               onOpenSidebar={() => setShowSidebar(true)}
+               bridge={bridge}
+-              switchToTerminal={() => setTab('terminal')}
++              switchToTerminal={handleSwitchToTerminal}
+               mcpServers={mcpServers}
+               onOpenMCP={() => setShowMCP(true)}
+             />

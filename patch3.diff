@@ -1,0 +1,11 @@
+--- src/App.tsx
++++ src/App.tsx
+@@ -370,7 +370,7 @@
+             connState={bridge.connState}
+             onOutput={bridge.onOutput}
+             mcpServers={mcpServers}
+-            switchToTerminal={() => setTab('terminal')}
++            switchToTerminal={handleSwitchToTerminal}
+           />
+         ) : (
+           <Cortex
