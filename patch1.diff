@@ -1,0 +1,23 @@
+--- src/MessageBubble.tsx
++++ src/MessageBubble.tsx
+@@ -1,4 +1,4 @@
+-import { useState } from 'react'
++import { useState, memo } from 'react'
+ import './MessageBubble.css'
+
+ interface Props {
+@@ -53,7 +53,7 @@
+   )
+ }
+
+-export default function MessageBubble({ content, role, onRunCommand, connState, onSpeak, speaking }: Props) {
++export default memo(function MessageBubble({ content, role, onRunCommand, connState, onSpeak, speaking }: Props) {
+   if (role === 'user') {
+     return <div className="bubble user-bubble">{content}</div>
+   }
+@@ -82,4 +82,4 @@
+       )}
+     </div>
+   )
+-}
++})
