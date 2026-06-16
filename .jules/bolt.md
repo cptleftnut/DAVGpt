@@ -1,0 +1,3 @@
+## 2024-05-18 - Chat History Re-renders
+**Learning:** Typing in the main chat input field causes the entire chat history to re-render because the input state is held in the `Chat` component, leading to O(N) regex parsing and VDOM diffs for every keystroke.
+**Action:** When a parent component holds rapidly-changing state like text input, use `React.memo` with a custom equality function on list item components (like `MessageBubble`) to ignore unstable callback references (`onRunCommand`, `onSpeak`) that don't depend on the changing state. Combine this with `useMemo` for expensive string/regex operations.
