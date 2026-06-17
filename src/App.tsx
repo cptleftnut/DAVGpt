@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import Terminal from './Terminal'
 import SkillsPanel, { Skill } from './Skills'
 import MessageBubble from './MessageBubble'
@@ -107,11 +107,12 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
     return data.choices?.[0]?.message?.content ?? data.error?.message ?? 'No response'
   }
 
-  const handleRunCommand = (cmd: string): boolean => {
+  // ⚡ Bolt Optimization: Memoize the callback to prevent unnecessary re-renders of MessageBubble
+  const handleRunCommand = useCallback((cmd: string): boolean => {
     const ok = bridge.sendCommand(cmd)
     if (ok) switchToTerminal()
     return ok
-  }
+  }, [bridge, switchToTerminal])
 
   const send = async () => {
     const text = input.trim()
@@ -329,6 +330,9 @@ export default function App() {
     persistSessions(sessions.map(s => s.id === id ? { ...s, name } : s))
   }
 
+  // ⚡ Bolt Optimization: Memoize the callback to prevent unnecessary re-renders of child components
+  const switchToTerminal = useCallback(() => setTab('terminal'), [])
+
   return (
     <div className="app">
       {showMCP && (
@@ -359,7 +363,7 @@ export default function App() {
               onUpdateSession={handleUpdateSession}
               onOpenSidebar={() => setShowSidebar(true)}
               bridge={bridge}
-              switchToTerminal={() => setTab('terminal')}
+              switchToTerminal={switchToTerminal}
               mcpServers={mcpServers}
               onOpenMCP={() => setShowMCP(true)}
             />
@@ -373,7 +377,7 @@ export default function App() {
             connState={bridge.connState}
             onOutput={bridge.onOutput}
             mcpServers={mcpServers}
-            switchToTerminal={() => setTab('terminal')}
+            switchToTerminal={switchToTerminal}
           />
         ) : (
           <Cortex

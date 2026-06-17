@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import './MessageBubble.css'
 
 interface Props {
@@ -70,12 +70,16 @@ function CodeBlock({ lang, code, onRun, connState }: {
   )
 }
 
-export default function MessageBubble({ content, role, onRunCommand, connState, onSpeak, speaking }: Props) {
+const MessageBubble = React.memo(function MessageBubble({ content, role, onRunCommand, connState, onSpeak, speaking }: Props) {
+  // ⚡ Bolt Optimization: Memoize the regex parsing to avoid doing it on every re-render
+  const blocks = useMemo(() => {
+    if (role === 'user') return []
+    return parseBlocks(content)
+  }, [content, role])
+
   if (role === 'user') {
     return <div className="bubble user-bubble">{content}</div>
   }
-
-  const blocks = parseBlocks(content)
 
   return (
     <div className="bubble ai-bubble">
@@ -101,4 +105,6 @@ export default function MessageBubble({ content, role, onRunCommand, connState, 
       )}
     </div>
   )
-}
+})
+
+export default MessageBubble
