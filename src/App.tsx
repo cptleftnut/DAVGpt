@@ -181,7 +181,7 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
   return (
     <div className="chat-page">
       <header className="header">
-        <button className="menu-btn" onClick={onOpenSidebar}>☰</button>
+        <button className="menu-btn" aria-label="Open Sidebar" onClick={onOpenSidebar}>☰</button>
         <div className="header-center">
           <span className="session-env-icon">{env.icon}</span>
           <span className="session-name">{session.name}</span>
@@ -191,7 +191,7 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
             🔌{mcpServers.filter(s=>s.connected).length > 0 && <span className="mcp-badge">{mcpServers.filter(s=>s.connected).length}</span>}
           </button>
           <span className={`mini-conn ${bridge.connState}`}>⌨️</span>
-          <button className="icon-btn" onClick={() => setShowSettings(true)}>⚙️</button>
+          <button className="icon-btn" aria-label="Settings" onClick={() => setShowSettings(true)}>⚙️</button>
         </div>
       </header>
 
@@ -250,16 +250,16 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
 
       <footer className="input-bar">
         <div className="input-wrap">
-          {!isHermes && <button className="skill-btn" onClick={() => setShowSkills(true)} disabled={!apiKey}>⚡</button>}
+          {!isHermes && <button className="skill-btn" aria-label="Toggle Skills Panel" onClick={() => setShowSkills(true)} disabled={!apiKey}>⚡</button>}
           {stt.supported && (
-            <button className={`mic-btn ${stt.listening ? 'listening' : ''}`} onClick={stt.listening ? stt.stop : stt.start}>
+            <button className={`mic-btn ${stt.listening ? 'listening' : ''}`} aria-label={stt.listening ? 'Stop voice input' : 'Start voice input'} onClick={stt.listening ? stt.stop : stt.start}>
               {stt.listening ? '⏹' : '🎤'}
             </button>
           )}
           <textarea ref={textareaRef} className="input" rows={1}
             placeholder={apiKey ? (activeSkill ? activeSkill.placeholder : 'Message DAVGpt...') : 'Add Groq API key in ⚙️'}
             value={input} onChange={autoResize} onKeyDown={onKeyDown} disabled={!apiKey || loading} />
-          <button className="send-btn" onClick={send} disabled={!input.trim() || loading || !apiKey}>↑</button>
+          <button className="send-btn" aria-label="Send message" onClick={send} disabled={!input.trim() || loading || !apiKey}>↑</button>
         </div>
       </footer>
     </div>
