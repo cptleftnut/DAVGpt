@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import './MessageBubble.css'
 
 interface Props {
@@ -70,7 +70,7 @@ function CodeBlock({ lang, code, onRun, connState }: {
   )
 }
 
-export default function MessageBubble({ content, role, onRunCommand, connState, onSpeak, speaking }: Props) {
+const MessageBubbleContent = ({ content, role, onRunCommand, connState, onSpeak, speaking }: Props) => {
   if (role === 'user') {
     return <div className="bubble user-bubble">{content}</div>
   }
@@ -102,3 +102,16 @@ export default function MessageBubble({ content, role, onRunCommand, connState, 
     </div>
   )
 }
+
+// ⚡ Bolt Optimization:
+// Wrapped MessageBubble in React.memo to prevent O(N) re-renders when the user types in the input.
+// onRunCommand is an inline function in App.tsx, so standard memo would fail.
+// Custom comparison ensures we only re-render if actual message props change.
+const MessageBubble = React.memo(MessageBubbleContent, (prev, next) => {
+  return prev.content === next.content &&
+         prev.role === next.role &&
+         prev.connState === next.connState &&
+         prev.speaking === next.speaking;
+});
+
+export default MessageBubble;
