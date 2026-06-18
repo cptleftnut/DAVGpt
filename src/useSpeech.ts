@@ -1,6 +1,45 @@
 // useSpeech.ts — TTS + STT via Web Speech API (built into Android WebView)
 import { useState, useRef, useCallback, useEffect } from 'react'
 
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: {
+    [index: number]: {
+      [index: number]: {
+        transcript: string;
+      };
+    };
+  };
+}
+
+interface ISpeechRecognition extends EventTarget {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onstart: () => void;
+  onresult: (e: SpeechRecognitionEvent) => void;
+  onerror: (e: SpeechRecognitionErrorEvent) => void;
+  onend: () => void;
+  start: () => void;
+  stop: () => void;
+}
+
+interface SpeechRecognitionConstructor {
+  new (): ISpeechRecognition;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
+
+
 // ── TTS ────────────────────────────────────────────────────
 export function useTTS() {
   const [speaking, setSpeaking] = useState(false)
@@ -51,9 +90,9 @@ export function useTTS() {
 export function useSTT(onResult: (text: string) => void) {
   const [listening, setListening] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const recogRef = useRef<any>(null)
+  const recogRef = useRef<ISpeechRecognition | null>(null)
 
-  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
   const supported = !!SpeechRecognition
 
   const start = useCallback(() => {
@@ -65,12 +104,12 @@ export function useSTT(onResult: (text: string) => void) {
     recog.interimResults = false
     recog.maxAlternatives = 1
     recog.onstart = () => setListening(true)
-    recog.onresult = (e: any) => {
+    recog.onresult = (e: SpeechRecognitionEvent) => {
       const transcript = e.results[0][0].transcript
       onResult(transcript)
       setListening(false)
     }
-    recog.onerror = (e: any) => {
+    recog.onerror = (e: SpeechRecognitionErrorEvent) => {
       setError(e.error === 'not-allowed' ? 'Mic permission denied' : e.error)
       setListening(false)
     }
