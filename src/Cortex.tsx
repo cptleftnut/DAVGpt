@@ -92,8 +92,9 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
       addDaemonMonologue(content, trigger)
       await addBlock({ type: 'monologue', content, source: 'daemon', tags: ['daemon'] })
       refresh()
-    } catch (e: any) {
-      addDaemonMonologue(`[Error: ${e.message}]`, trigger)
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      addDaemonMonologue(`[Error: ${errorMessage}]`, trigger)
     } finally {
       setDaemonRunning(false)
     }

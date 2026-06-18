@@ -138,8 +138,9 @@ export async function callMCPTool(
     const content = data.result?.content
     if (Array.isArray(content)) return content.map((c: any) => c.text || JSON.stringify(c)).join('\n')
     return JSON.stringify(data.result)
-  } catch (e: any) {
-    return `Connection error: ${e.message}`
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    return `Connection error: ${errorMessage}`
   }
 }
 
