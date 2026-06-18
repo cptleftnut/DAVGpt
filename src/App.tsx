@@ -181,23 +181,23 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
   return (
     <div className="chat-page">
       <header className="header">
-        <button className="menu-btn" onClick={onOpenSidebar}>☰</button>
+        <button className="menu-btn" onClick={onOpenSidebar} aria-label="Open sidebar menu" title="Open sidebar menu">☰</button>
         <div className="header-center">
           <span className="session-env-icon">{env.icon}</span>
           <span className="session-name">{session.name}</span>
         </div>
         <div className="header-right">
-          <button className="icon-btn" onClick={onOpenMCP} title="MCP Servers">
+          <button className="icon-btn" onClick={onOpenMCP} title="MCP Servers" aria-label="MCP Servers">
             🔌{mcpServers.filter(s=>s.connected).length > 0 && <span className="mcp-badge">{mcpServers.filter(s=>s.connected).length}</span>}
           </button>
           <span className={`mini-conn ${bridge.connState}`}>⌨️</span>
-          <button className="icon-btn" onClick={() => setShowSettings(true)}>⚙️</button>
+          <button className="icon-btn" onClick={() => setShowSettings(true)} aria-label="Open settings" title="Settings">⚙️</button>
         </div>
       </header>
 
       {showSkills && <SkillsPanel onSelect={(s) => { setActiveSkill(s); if(s.inputTemplate) setInput(s.inputTemplate); setShowSkills(false) }} onClose={() => setShowSkills(false)} />}
 
-      {activeSkill && <div className="skill-banner">{activeSkill.icon} {activeSkill.label}<button className="skill-clear" onClick={() => { setActiveSkill(null); setInput('') }}>✕</button></div>}
+      {activeSkill && <div className="skill-banner">{activeSkill.icon} {activeSkill.label}<button className="skill-clear" onClick={() => { setActiveSkill(null); setInput('') }} aria-label="Clear active skill" title="Clear active skill">✕</button></div>}
       {isHermes && <div className="agent-banner">🤖 Hermes Agent Mode — tool calling enabled</div>}
 
       {showSettings && (
@@ -250,16 +250,16 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
 
       <footer className="input-bar">
         <div className="input-wrap">
-          {!isHermes && <button className="skill-btn" onClick={() => setShowSkills(true)} disabled={!apiKey}>⚡</button>}
+          {!isHermes && <button className="skill-btn" onClick={() => setShowSkills(true)} disabled={!apiKey} aria-label="Use skills" title="Use skills">⚡</button>}
           {stt.supported && (
-            <button className={`mic-btn ${stt.listening ? 'listening' : ''}`} onClick={stt.listening ? stt.stop : stt.start}>
+            <button className={`mic-btn ${stt.listening ? 'listening' : ''}`} onClick={stt.listening ? stt.stop : stt.start} aria-label={stt.listening ? 'Stop listening' : 'Start listening'} title={stt.listening ? 'Stop listening' : 'Start listening'}>
               {stt.listening ? '⏹' : '🎤'}
             </button>
           )}
           <textarea ref={textareaRef} className="input" rows={1}
             placeholder={apiKey ? (activeSkill ? activeSkill.placeholder : 'Message DAVGpt...') : 'Add Groq API key in ⚙️'}
-            value={input} onChange={autoResize} onKeyDown={onKeyDown} disabled={!apiKey || loading} />
-          <button className="send-btn" onClick={send} disabled={!input.trim() || loading || !apiKey}>↑</button>
+            value={input} onChange={autoResize} onKeyDown={onKeyDown} disabled={!apiKey || loading} aria-label="Message input" />
+          <button className="send-btn" onClick={send} disabled={!input.trim() || loading || !apiKey} aria-label="Send message" title="Send message">↑</button>
         </div>
       </footer>
     </div>
