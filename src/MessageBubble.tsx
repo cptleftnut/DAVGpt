@@ -54,11 +54,12 @@ function CodeBlock({ lang, code, onRun, connState }: {
       <div className="code-header">
         <span className="code-lang">{lang || 'bash'}</span>
         <div className="code-actions">
-          <button className="code-btn" onClick={copy}>{copied ? '✓' : 'Copy'}</button>
+          <button className="code-btn" onClick={copy} aria-label={copied ? "Code copied" : "Copy code"}>{copied ? '✓' : 'Copy'}</button>
           {canRun && (
             <button
               className={`code-btn run-btn ${ran ? 'ran' : ''} ${connState !== 'connected' ? 'offline' : ''}`}
               onClick={handleRun}
+              aria-label={ran ? "Command sent" : "Run command"}
             >
               {ran ? '✓ Sent' : connState === 'connected' ? '▶ Run' : '▶ Run (connect first)'}
             </button>
@@ -81,7 +82,7 @@ export default function MessageBubble({ content, role, onRunCommand, connState, 
     <div className="bubble ai-bubble">
       <div className="bubble-actions">
         {onSpeak && (
-          <button className="speak-btn" onClick={() => speaking ? window.speechSynthesis?.cancel() : onSpeak(content)} title={speaking ? "Stop" : "Read aloud"}>
+          <button className="speak-btn" onClick={() => speaking ? window.speechSynthesis?.cancel() : onSpeak(content)} title={speaking ? "Stop" : "Read aloud"} aria-label={speaking ? "Stop speaking" : "Read aloud"}>
             {speaking ? '⏹' : '🔊'}
           </button>
         )}
