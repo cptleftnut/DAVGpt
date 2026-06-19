@@ -1,0 +1,3 @@
+## 2024-06-19 - React.memo with Inline Functions
+**Learning:** Using `React.memo` on list items (like `MessageBubble`) will fail to prevent re-renders if the parent passes inline callback functions (e.g., `onRunCommand={msg.role === 'assistant' ? handleRunCommand : undefined}`). The reference to these functions changes every render, invalidating the memoization.
+**Action:** When memoizing list components that receive inline functions, always provide a custom comparison function to `React.memo` that only compares primitive/data props and intentionally ignores the unstable function props, provided the functions themselves don't rely on stale closures.
