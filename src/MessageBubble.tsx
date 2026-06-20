@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import './MessageBubble.css'
 
 interface Props {
@@ -70,7 +70,11 @@ function CodeBlock({ lang, code, onRun, connState }: {
   )
 }
 
-export default function MessageBubble({ content, role, onRunCommand, connState, onSpeak, speaking }: Props) {
+// ⚡ Bolt Optimization: Use React.memo with a custom comparison function
+// This prevents O(N) re-renders of all messages when the parent component's state updates
+// (e.g., when the user is typing in the input field). We only compare primitive props
+// to safely ignore recreated inline function props (onRunCommand, onSpeak).
+const MessageBubble = memo(function MessageBubble({ content, role, onRunCommand, connState, onSpeak, speaking }: Props) {
   if (role === 'user') {
     return <div className="bubble user-bubble">{content}</div>
   }
@@ -101,4 +105,13 @@ export default function MessageBubble({ content, role, onRunCommand, connState, 
       )}
     </div>
   )
-}
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.content === nextProps.content &&
+    prevProps.role === nextProps.role &&
+    prevProps.connState === nextProps.connState &&
+    prevProps.speaking === nextProps.speaking
+  )
+})
+
+export default MessageBubble
