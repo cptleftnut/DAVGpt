@@ -70,7 +70,9 @@ function CodeBlock({ lang, code, onRun, connState }: {
   )
 }
 
-export default function MessageBubble({ content, role, onRunCommand, connState, onSpeak, speaking }: Props) {
+import { memo } from 'react'
+
+function MessageBubbleBase({ content, role, onRunCommand, connState, onSpeak, speaking }: Props) {
   if (role === 'user') {
     return <div className="bubble user-bubble">{content}</div>
   }
@@ -102,3 +104,16 @@ export default function MessageBubble({ content, role, onRunCommand, connState, 
     </div>
   )
 }
+
+// ⚡ Bolt: Use React.memo with a custom comparator to prevent O(N) re-renders.
+// Since App.tsx passes inline functions (like onRunCommand and onSpeak), standard React.memo
+// fails to prevent re-renders when parent state updates (e.g. user typing in input).
+// We only check primitive props to effectively memoize the component.
+export default memo(MessageBubbleBase, (prevProps, nextProps) => {
+  return (
+    prevProps.content === nextProps.content &&
+    prevProps.role === nextProps.role &&
+    prevProps.connState === nextProps.connState &&
+    prevProps.speaking === nextProps.speaking
+  )
+})
