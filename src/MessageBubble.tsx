@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import './MessageBubble.css'
 
 interface Props {
@@ -70,7 +70,7 @@ function CodeBlock({ lang, code, onRun, connState }: {
   )
 }
 
-export default function MessageBubble({ content, role, onRunCommand, connState, onSpeak, speaking }: Props) {
+function MessageBubble({ content, role, onRunCommand, connState, onSpeak, speaking }: Props) {
   if (role === 'user') {
     return <div className="bubble user-bubble">{content}</div>
   }
@@ -102,3 +102,12 @@ export default function MessageBubble({ content, role, onRunCommand, connState, 
     </div>
   )
 }
+
+// Optimize component with React.memo and custom comparison function to check only
+// primitive props, avoiding unnecessary re-renders when parent functions change.
+export default React.memo(MessageBubble, (prev, next) => {
+  return prev.content === next.content &&
+         prev.role === next.role &&
+         prev.connState === next.connState &&
+         prev.speaking === next.speaking
+})
