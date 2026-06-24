@@ -1,0 +1,3 @@
+## 2026-06-24 - React.memo fails with inline functions
+**Learning:** When attempting to memoize a React component (like `MessageBubble`) to prevent O(N) list re-renders, standard `React.memo` will fail if inline functions (like `onRunCommand`, `onSpeak`) are passed as props from the parent. The parent creates new function instances on every render, causing the props to change and breaking memoization.
+**Action:** Implement `React.memo` with a custom comparison function that specifically checks only the primitive props (like `content`, `role`, `connState`) that actually matter for re-rendering, ignoring the function props.
