@@ -62,7 +62,7 @@ export default function MCPPanel({ onClose, onServersChange }: Props) {
       <div className="mcp-panel" onClick={e => e.stopPropagation()}>
         <div className="mcp-header">
           <span>🔌 MCP Servers</span>
-          <button className="mcp-close" onClick={onClose}>✕</button>
+          <button className="mcp-close" aria-label="Close MCP Panel" onClick={onClose}>✕</button>
         </div>
 
         {connectedServers.length > 0 && (
