@@ -45,7 +45,7 @@ export default function Sidebar({
         {/* Header */}
         <div className="sb-header">
           <span className="sb-title">DAVGpt</span>
-          <button className="sb-close" onClick={onClose}>✕</button>
+          <button className="sb-close" onClick={onClose} aria-label="Close sidebar">✕</button>
         </div>
 
         {/* Tabs */}
