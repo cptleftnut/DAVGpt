@@ -1,0 +1,3 @@
+## 2025-01-20 - React.memo with Inline Functions in Lists
+**Learning:** Standard `React.memo` fails to prevent re-renders in list components (like `MessageBubble`) when parent components (like `App.tsx`) pass inline functions as props (e.g., `onRunCommand={...}`). This causes O(N) re-renders for every keystroke during typing because the inline function's reference changes on every parent render.
+**Action:** When memoizing list items that receive inline functions, always provide a custom comparison function to `React.memo` that only checks the primitive props that actually affect rendering, ignoring the function prop references.
