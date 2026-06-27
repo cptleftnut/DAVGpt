@@ -1,0 +1,3 @@
+## 2026-06-27 - React.memo with Inline Functions in Chat Lists
+**Learning:** In the DAVGpt architecture, long lists of components like `MessageBubble` can cause severe O(N) re-renders when parent state (like user typing input) changes. Using a standard `React.memo` will fail to prevent these re-renders because inline callback functions (like `onRunCommand` passed from the Chat component) break shallow comparison.
+**Action:** When optimizing list components that receive inline functions, always provide a custom comparison function to `React.memo` that explicitly checks only the primitive props (e.g., `content`, `role`, `connState`) rather than relying on default shallow comparison.
