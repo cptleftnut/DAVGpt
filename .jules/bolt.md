@@ -1,0 +1,3 @@
+## 2024-03-24 - React.memo with Inline Function Props
+**Learning:** Standard `React.memo` fails to prevent re-renders in component lists (like `MessageBubble`) when inline functions are passed as props from the parent component (e.g., `App.tsx` during user typing). This causes O(N) re-renders for the entire list on every keystroke.
+**Action:** When using `React.memo` to optimize list components that receive function props, implement a custom comparison function as the second argument to `React.memo`. This custom function should selectively check only the relevant primitive props (like `content`, `role`, etc.) and safely ignore the varying inline function references.
