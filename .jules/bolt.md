@@ -1,0 +1,3 @@
+## 2024-05-18 - Memoizing Lists with Inline Function Props
+**Learning:** Standard `React.memo()` fails to prevent re-renders in list components (like `MessageBubble`) if the parent component passes new inline function references (e.g., `() => handleAction()`) on every render. This creates a hidden O(N) rendering bottleneck when parent state updates frequently (like user typing in an input).
+**Action:** When memoizing list items that receive callbacks, always implement a custom comparison function for `React.memo` that explicitly checks only the primitive props and ignores the function references (or ensure the parent strictly memoizes the callbacks via `useCallback`).
