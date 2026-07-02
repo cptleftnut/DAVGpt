@@ -312,7 +312,7 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
                     <button className="task-btn" onClick={() => toggleTask(t.id)}>
                       {t.enabled ? '⏸ Pause' : '▶ Resume'}
                     </button>
-                    <button className="task-btn del" onClick={() => deleteTask(t.id)}>🗑</button>
+                    <button className="task-btn del" onClick={() => deleteTask(t.id)} aria-label="Delete task" title="Delete task">🗑</button>
                   </div>
                 </div>
               ))}
