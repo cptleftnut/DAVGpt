@@ -81,7 +81,7 @@ export default function MessageBubble({ content, role, onRunCommand, connState, 
     <div className="bubble ai-bubble">
       <div className="bubble-actions">
         {onSpeak && (
-          <button className="speak-btn" onClick={() => speaking ? window.speechSynthesis?.cancel() : onSpeak(content)} title={speaking ? "Stop" : "Read aloud"}>
+          <button className="speak-btn" onClick={() => speaking ? window.speechSynthesis?.cancel() : onSpeak(content)} aria-label={speaking ? "Stop speaking" : "Read aloud"} title={speaking ? "Stop" : "Read aloud"}>
             {speaking ? '⏹' : '🔊'}
           </button>
         )}
