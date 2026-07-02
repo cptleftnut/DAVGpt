@@ -1,0 +1,3 @@
+## 2024-07-02 - React.memo with Inline Functions
+**Learning:** Standard `React.memo` fails to prevent O(N) re-renders for list items (like `MessageBubble` components in a chat view) when parent state updates occur (e.g., user typing) if inline functions (like `onRunCommand` or `onSpeak`) are passed as props. The parent re-render recreates the functions, causing reference equality checks to fail.
+**Action:** When optimizing React component lists to prevent re-renders during parent state updates, ensure `React.memo` is used with a custom comparison function that explicitly checks only the relevant primitive props instead of relying on default reference equality.
