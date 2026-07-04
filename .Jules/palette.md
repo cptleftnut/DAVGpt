@@ -1,0 +1,3 @@
+## 2024-05-17 - Added native confirm dialog for critical destructive actions
+**Learning:** Destructive actions without a confirmation prompt can lead to accidental data loss and poor user experience. While adding custom modal dialogs can be overly complex and increase code footprint, standard native `window.confirm()` provides an immediate, accessible, and zero-dependency solution.
+**Action:** When adding or auditing destructive actions (like delete buttons), implement at minimum a native confirmation prompt (`window.confirm()`) if no custom dialog system exists, while simultaneously improving the element's accessibility with appropriate ARIA labels.
