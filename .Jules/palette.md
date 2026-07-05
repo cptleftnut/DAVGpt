@@ -1,0 +1,1 @@
+## 2026-07-05 - Adding accessibility to icon-only buttons\n**Learning:** Found several icon-only buttons in the main chat view without ARIA labels or explicit titles. Screen readers would just announce 'button' without context.\n**Action:** Add aria-label and/or title attributes to buttons in App.tsx (menu, settings, skills, mic, send).
