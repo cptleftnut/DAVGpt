@@ -23,7 +23,11 @@ export default function Sidebar({
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameVal, setRenameVal] = useState('')
 
-  const sorted = [...sessions].sort((a, b) => b.updatedAt - a.updatedAt)
+  // ⚡ Bolt Optimization: Memoize the sorting of sessions to prevent O(N log N)
+  // recalculation on every render (e.g. when typing in the rename input or switching tabs).
+  const sorted = useMemo(() => {
+    return [...sessions].sort((a, b) => b.updatedAt - a.updatedAt)
+  }, [sessions])
 
   const startRename = (s: Session) => {
     setRenamingId(s.id)
