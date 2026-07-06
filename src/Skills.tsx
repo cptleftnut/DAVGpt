@@ -67,7 +67,7 @@ export default function SkillsPanel({ onSelect, onClose }: SkillsProps) {
       <div className="skills-panel" onClick={e => e.stopPropagation()}>
         <div className="skills-header">
           <span>⚡ Skills</span>
-          <button className="skills-close" onClick={onClose}>✕</button>
+          <button className="skills-close" onClick={onClose} aria-label="Close skills" title="Close skills">✕</button>
         </div>
 
         {/* Category tabs */}
