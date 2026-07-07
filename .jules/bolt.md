@@ -1,0 +1,3 @@
+## 2024-07-07 - Inefficient derived state calculation in React render phase
+**Learning:** Calling functions that load JSON from localStorage (like `loadChain()`, `loadDaemonLog()`) directly inside render output causes synchronous disk/storage access and JSON parsing on *every single render*. The `Cortex.tsx` component is calling `loadChain()` multiple times in its render block even though the state `chain` already exists and is kept in sync.
+**Action:** Replace all inline calls to `loadChain()`, `loadDaemonLog()`, etc. inside the render function of components with their respective state variables (e.g., `chain`, `daemonLog`), which correctly persist and update their values locally.
