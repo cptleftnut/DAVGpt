@@ -81,7 +81,7 @@ function MessageBubbleComponent({ content, role, onRunCommand, connState, onSpea
     <div className="bubble ai-bubble">
       <div className="bubble-actions">
         {onSpeak && (
-          <button className="speak-btn" onClick={() => speaking ? window.speechSynthesis?.cancel() : onSpeak(content)} title={speaking ? "Stop" : "Read aloud"}>
+          <button className="speak-btn" onClick={() => speaking ? window.speechSynthesis?.cancel() : onSpeak(content)} title={speaking ? "Stop" : "Read aloud"} aria-label={speaking ? 'Stop speaking' : 'Read aloud'}>
             {speaking ? '⏹' : '🔊'}
           </button>
         )}

@@ -45,7 +45,7 @@ export default function Sidebar({
         {/* Header */}
         <div className="sb-header">
           <span className="sb-title">DAVGpt</span>
-          <button className="sb-close" onClick={onClose}>✕</button>
+          <button className="sb-close" onClick={onClose} aria-label="Close sidebar" title="Close sidebar">✕</button>
         </div>
 
         {/* Tabs */}
@@ -92,8 +92,8 @@ export default function Sidebar({
                       )}
                     </div>
                     <div className="sb-actions" onClick={e => e.stopPropagation()}>
-                      <button className="sb-action" onClick={() => startRename(s)} title="Rename">✏️</button>
-                      <button className="sb-action del" onClick={() => onDelete(s.id)} title="Delete">🗑️</button>
+                      <button className="sb-action" onClick={() => startRename(s)} title="Rename chat" aria-label="Rename chat">✏️</button>
+                      <button className="sb-action del" onClick={() => onDelete(s.id)} title="Delete chat" aria-label="Delete chat">🗑️</button>
                     </div>
                   </div>
                 )
