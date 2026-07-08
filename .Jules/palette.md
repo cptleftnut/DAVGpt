@@ -1,0 +1,3 @@
+## 2024-05-18 - Icon-Only Button Accessibility Pattern
+**Learning:** Found multiple icon-only buttons (☰, ⚙️, ⚡, 🎤, ↑, ✕, 🔊) missing ARIA labels and tooltips in core interactive components (App, Sidebar, MessageBubble). This renders the app largely unusable for screen reader users and confusing for mouse users who don't recognize the icons.
+**Action:** When adding new interactive icons, ALWAYS include both `aria-label` for screen readers and `title` for hover tooltips. For dynamic buttons (like the mic/recording toggle), ensure the labels update reactively based on state (e.g., `aria-label={stt.listening ? 'Stop' : 'Start'}`).
