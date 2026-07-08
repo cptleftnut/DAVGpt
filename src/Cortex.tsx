@@ -24,11 +24,13 @@ interface Props {
 
 export default function Cortex({ apiKey, sendCommand, connState }: Props) {
   const [tab, setTab] = useState<CortexTab>('dashboard')
-  const [chain, setChain] = useState<SomaBlock[]>([])
+  // ⚡ Bolt Optimization: Use lazy state initialization to prevent reading from
+  // localStorage on every render.
+  const [chain, setChain] = useState<SomaBlock[]>(() => loadChain())
   const [chainValid, setChainValid] = useState<boolean | null>(null)
-  const [irisProfile, setIrisProfileState] = useState<IrisProfile>(loadIrisProfile())
-  const [groundTasks, setGroundTasks] = useState<GroundTask[]>(loadGroundTasks())
-  const [daemonLog, setDaemonLog] = useState<DaemonMonologue[]>(loadDaemonLog())
+  const [irisProfile, setIrisProfileState] = useState<IrisProfile>(() => loadIrisProfile())
+  const [groundTasks, setGroundTasks] = useState<GroundTask[]>(() => loadGroundTasks())
+  const [daemonLog, setDaemonLog] = useState<DaemonMonologue[]>(() => loadDaemonLog())
   const [daemonRunning, setDaemonRunning] = useState(false)
   const [somaQuery, setSomaQuery] = useState('')
   const [somaResults, setSomaResults] = useState<SomaBlock[]>([])
@@ -36,7 +38,7 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
   const [newTask, setNewTask] = useState({ name: '', command: '', schedule: 'every60s' as GroundTask['schedule'] })
   const [selfProposal, setSelfProposal] = useState('')
   const [selfGenerating, setSelfGenerating] = useState(false)
-  const [lastDaemon, setLastDaemon] = useState(getLastDaemonRun())
+  const [lastDaemon, setLastDaemon] = useState(() => getLastDaemonRun())
 
   const refresh = () => {
     setChain(loadChain())
@@ -190,10 +192,11 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
             <div className="cortex-title">DAVSI CORTEX <span className="online-dot">●</span> ONLINE</div>
             <div className="pillar-grid">
               {[
-                { name: 'SOMA', icon: '⛓', val: `${chain.length || loadChain().length} blocks`, sub: 'SHA-256 memory chain', color: '#34d399' },
+                // ⚡ Bolt Optimization: Use the state variable instead of calling loadChain() and loadDaemonLog()
+                { name: 'SOMA', icon: '⛓', val: `${chain.length} blocks`, sub: 'SHA-256 memory chain', color: '#34d399' },
                 { name: 'IRIS', icon: '👁', val: irisProfile, sub: IRIS_ROUTES[irisProfile].description, color: IRIS_ROUTES[irisProfile].color },
                 { name: 'GROUND', icon: '⏱', val: `${groundTasks.filter(t=>t.enabled).length} active`, sub: '60s scheduler', color: '#fbbf24' },
-                { name: 'DAEMON', icon: '🌀', val: nextDaemonIn(), sub: `${loadDaemonLog().length} monologues`, color: '#a78bfa' },
+                { name: 'DAEMON', icon: '🌀', val: nextDaemonIn(), sub: `${daemonLog.length} monologues`, color: '#a78bfa' },
               ].map(p => (
                 <div key={p.name} className="pillar-card" style={{'--accent': p.color} as any}>
                   <div className="pillar-icon">{p.icon}</div>
@@ -223,7 +226,7 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
         {/* ── SOMA ── */}
         {tab === 'soma' && (
           <div className="tab-content-inner">
-            <div className="section-title">⛓ SOMA — Memory Chain ({loadChain().length} blocks)</div>
+            <div className="section-title">⛓ SOMA — Memory Chain ({chain.length} blocks)</div>
             <div className="soma-search">
               <input className="cx-input" placeholder="Search memory..." value={somaQuery}
                 onChange={e => setSomaQuery(e.target.value)} onKeyDown={e => e.key==='Enter' && doSearch()} />
@@ -236,7 +239,7 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
               <button className="cx-btn green" onClick={addMemoryBlock}>+ Add</button>
             </div>
             <div className="chain-list">
-              {(somaResults.length > 0 ? somaResults : loadChain().slice(-20).reverse()).map(b => (
+              {(somaResults.length > 0 ? somaResults : chain.slice(-20).reverse()).map(b => (
                 <div key={b.hash} className={`chain-block type-${b.type}`}>
                   <div className="block-header">
                     <span className="block-type">{b.type}</span>
@@ -247,7 +250,7 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
                   <div className="block-hash">#{b.hash.slice(0,16)}…</div>
                 </div>
               ))}
-              {loadChain().length === 0 && <p className="cx-empty">No memory blocks yet. Start chatting!</p>}
+              {chain.length === 0 && <p className="cx-empty">No memory blocks yet. Start chatting!</p>}
             </div>
           </div>
         )}
@@ -331,7 +334,7 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
               </button>
             </div>
             <div className="monologue-list">
-              {[...loadDaemonLog()].reverse().map(m => (
+              {[...daemonLog].reverse().map(m => (
                 <div key={m.id} className="monologue-card">
                   <div className="mono-header">
                     <span className="mono-trigger">{m.trigger}</span>
@@ -340,7 +343,7 @@ export default function Cortex({ apiKey, sendCommand, connState }: Props) {
                   <p className="mono-content">{m.content}</p>
                 </div>
               ))}
-              {loadDaemonLog().length === 0 && <p className="cx-empty">No monologues yet. Trigger the daemon.</p>}
+              {daemonLog.length === 0 && <p className="cx-empty">No monologues yet. Trigger the daemon.</p>}
             </div>
           </div>
         )}
