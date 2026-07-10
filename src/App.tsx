@@ -402,10 +402,6 @@ export default function App() {
           <span className="tab-icon">◈</span>
           <span className="tab-label">CORTEX</span>
         </button>
-        <button className={`tab-btn ${tab === 'cortex' ? 'active' : ''}`} onClick={() => setTab('cortex')}>
-          <span className="tab-icon">◈</span>
-          <span className="tab-label">CORTEX</span>
-        </button>
       </nav>
     </div>
   )
