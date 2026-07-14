@@ -8,7 +8,7 @@ import { useTTS, useSTT } from './useSpeech'
 import MCPPanel from './MCPPanel'
 import Cortex from './Cortex'
 import { addBlock, getChainContext } from './soma'
-import { loadIrisProfile, routeMessage, IRIS_ROUTES } from './iris'
+import { loadIrisProfile, routeMessage } from './iris'
 import AgentPanel from './AgentPanel'
 import { type MCPServer, loadMCPServers, callMCPTool } from './mcp'
 import {
@@ -48,7 +48,8 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
 }) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [showSettings, setShowSettings] = useState(!localStorage.getItem('davgpt_groq_key'))
+  // ⚡ Bolt Optimization: Lazy load state for synchronous IO operation
+  const [showSettings, setShowSettings] = useState(() => !localStorage.getItem('davgpt_groq_key'))
   const [showSkills, setShowSkills] = useState(false)
   const [activeSkill, setActiveSkill] = useState<Skill | null>(null)
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('davgpt_groq_key') || '')
@@ -56,8 +57,6 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const env = environments.find(e => e.id === session.environmentId) || environments[0]
-  const irisProfile = loadIrisProfile()
-  const irisRoute = IRIS_ROUTES[irisProfile]
   const isHermes = session.environmentId === 'hermes'
 
   const tts = useTTS()
