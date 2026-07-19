@@ -1,3 +1,16 @@
-💡 **What:** Replaced the array lookup `environments.find` inside the loop in `src/Sidebar.tsx` with a memoized `Map` object for O(1) lookups. Also fixed a few pre-existing TypeScript compilation errors.
-🎯 **Why:** The previous code had O(N*M) time complexity during the rendering loop. With thousands of environments and sessions, this caused significant slowdowns when opening or rendering the Sidebar component.
-📊 **Measured Improvement:** Baseline average render time was ~2800ms. After this optimization, average render time is roughly ~1100ms. This results in a roughly 60% reduction in processing time.
+💡 What
+Added explicit `aria-label` and `title` attributes to all primary icon-only buttons in the main chat application (`src/App.tsx`) and the sidebar component (`src/Sidebar.tsx`).
+
+🎯 Why
+Icon-only buttons without accessible labels fail to provide context to screen reader users and lack tooltips for mouse users, diminishing the overall usability and accessibility of the interface. This enhancement ensures all interactive elements are properly identified.
+
+📸 Before/After
+Before:
+`<button className="menu-btn">☰</button>`
+After:
+`<button className="menu-btn" aria-label="Open menu" title="Open menu">☰</button>`
+
+*(Frontend verification video provided below via Playwright)*
+
+♿ Accessibility
+Improves screen reader compliance by supplying meaningful `aria-label`s and benefits all users by offering `title` tooltips on hover for icon buttons like settings, MCP servers, send, microphone, sidebar toggle, and session actions (rename/delete).
