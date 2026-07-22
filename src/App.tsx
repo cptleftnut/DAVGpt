@@ -181,17 +181,17 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
   return (
     <div className="chat-page">
       <header className="header">
-        <button className="menu-btn" onClick={onOpenSidebar}>☰</button>
+        <button className="menu-btn" onClick={onOpenSidebar} aria-label="Open sidebar" title="Open sidebar">☰</button>
         <div className="header-center">
           <span className="session-env-icon">{env.icon}</span>
           <span className="session-name">{session.name}</span>
         </div>
         <div className="header-right">
-          <button className="icon-btn" onClick={onOpenMCP} title="MCP Servers">
+          <button className="icon-btn" onClick={onOpenMCP} aria-label="MCP Servers" title="MCP Servers">
             🔌{mcpServers.filter(s=>s.connected).length > 0 && <span className="mcp-badge">{mcpServers.filter(s=>s.connected).length}</span>}
           </button>
           <span className={`mini-conn ${bridge.connState}`}>⌨️</span>
-          <button className="icon-btn" onClick={() => setShowSettings(true)}>⚙️</button>
+          <button className="icon-btn" onClick={() => setShowSettings(true)} aria-label="Settings" title="Settings">⚙️</button>
         </div>
       </header>
 
@@ -385,24 +385,20 @@ export default function App() {
       </div>
 
       <nav className="tab-bar">
-        <button className={`tab-btn ${tab === 'chat' ? 'active' : ''}`} onClick={() => setTab('chat')}>
+        <button className={`tab-btn ${tab === 'chat' ? 'active' : ''}`} onClick={() => setTab('chat')} aria-label="Chat tab" title="Chat">
           <span className="tab-icon">💬</span>
           <span className="tab-label">Chat</span>
         </button>
-        <button className={`tab-btn ${tab === 'terminal' ? 'active' : ''}`} onClick={() => setTab('terminal')}>
+        <button className={`tab-btn ${tab === 'terminal' ? 'active' : ''}`} onClick={() => setTab('terminal')} aria-label="Terminal tab" title="Terminal">
           <span className="tab-icon">⌨️</span>
           <span className="tab-label">Terminal</span>
           {bridge.connState === 'connected' && <span className="tab-dot" />}
         </button>
-        <button className={`tab-btn ${tab === 'agent' ? 'active' : ''}`} onClick={() => setTab('agent')}>
+        <button className={`tab-btn ${tab === 'agent' ? 'active' : ''}`} onClick={() => setTab('agent')} aria-label="Agent tab" title="Agent">
           <span className="tab-icon">⚡</span>
           <span className="tab-label">KIRA</span>
         </button>
-        <button className={`tab-btn ${tab === 'cortex' ? 'active' : ''}`} onClick={() => setTab('cortex')}>
-          <span className="tab-icon">◈</span>
-          <span className="tab-label">CORTEX</span>
-        </button>
-        <button className={`tab-btn ${tab === 'cortex' ? 'active' : ''}`} onClick={() => setTab('cortex')}>
+        <button className={`tab-btn ${tab === 'cortex' ? 'active' : ''}`} onClick={() => setTab('cortex')} aria-label="Cortex tab" title="Cortex">
           <span className="tab-icon">◈</span>
           <span className="tab-label">CORTEX</span>
         </button>
