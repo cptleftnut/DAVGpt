@@ -48,7 +48,9 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
 }) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [showSettings, setShowSettings] = useState(!localStorage.getItem('davgpt_groq_key'))
+  // ⚡ Bolt Optimization: Use lazy state initialization to prevent reading from
+  // localStorage on every render (e.g. while typing).
+  const [showSettings, setShowSettings] = useState(() => !localStorage.getItem('davgpt_groq_key'))
   const [showSkills, setShowSkills] = useState(false)
   const [activeSkill, setActiveSkill] = useState<Skill | null>(null)
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('davgpt_groq_key') || '')
@@ -56,8 +58,8 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const env = environments.find(e => e.id === session.environmentId) || environments[0]
-  const irisProfile = loadIrisProfile()
-  const irisRoute = IRIS_ROUTES[irisProfile]
+  // ⚡ Bolt Optimization: Removed unused irisProfile and irisRoute variables
+  // that were calling loadIrisProfile() (which reads localStorage) on every render.
   const isHermes = session.environmentId === 'hermes'
 
   const tts = useTTS()
