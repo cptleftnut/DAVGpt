@@ -48,7 +48,7 @@ function Chat({ session, environments, onUpdateSession, onOpenSidebar, bridge, s
 }) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [showSettings, setShowSettings] = useState(!localStorage.getItem('davgpt_groq_key'))
+  const [showSettings, setShowSettings] = useState(() => !localStorage.getItem('davgpt_groq_key'))
   const [showSkills, setShowSkills] = useState(false)
   const [activeSkill, setActiveSkill] = useState<Skill | null>(null)
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('davgpt_groq_key') || '')
